@@ -1,0 +1,40 @@
+사진 출처와 라이선스 (인천공항 → 지하철 안내 앱, 개인 학습용)
+확인·다운로드: 2026-10-20
+
+==================================================================
+1. datagokr\  (27장)
+==================================================================
+- 자료명  : 인천국제공항공사_공항 전경 및 이미지_20250717
+- 제공기관: 인천국제공항공사 (공공데이터포털 등록)
+- 주소    : https://www.data.go.kr/data/15130703/fileData.do
+- 라이선스: 공공누리 제1유형 (출처표시) - 상업적 이용·변경 가능, 출처 표시 필수
+- 표시 예 : "출처: 인천국제공항공사, 공공데이터포털(data.go.kr)"
+- 참고    : 파일 날짜는 2024-07-30 / 2025-07-16이지만 일부는 촬영 시점이 더 오래됨.
+            예) T1 입국장.JPG 에 '마스크 착용 의무' 안내판이 보임(코로나 시기 촬영).
+            교통센터*.jpg 는 건물 외관/야경이며 역 내부 사진은 아님.
+
+==================================================================
+2. wikimedia\  (3장, 2024-03-17 촬영)
+==================================================================
+- 작성자  : MNXANL (Wikimedia Commons, Own work)
+- 라이선스: CC BY-SA 4.0  https://creativecommons.org/licenses/by-sa/4.0/
+- 조건    : 작성자·라이선스·출처 링크 표시 필수.
+            사진을 수정(자르기 제외 편집, 화살표 합성 등)해 공개하면 그 결과물도 CC BY-SA 4.0으로 공개.
+- 파일별 원본 페이지
+  * 202403_AREX_Express_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg
+    https://commons.wikimedia.org/wiki/File:202403_AREX_Express_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg
+    (직통열차 매표기·개찰구·고객안내센터)
+  * 202403_AREX_Local_Platform_1,2_of_Incheon_International_Airport_Terminal_1_Station.jpg
+    https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Platform_1,2_of_Incheon_International_Airport_Terminal_1_Station.jpg
+    (일반열차 1·2번 승강장)
+  * 202403_AREX_Local_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg
+    https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg
+    (일반열차 대합실)
+- 표시 예 : "Photo: MNXANL / Wikimedia Commons, CC BY-SA 4.0"
+
+==================================================================
+앱·발표에 쓸 때
+==================================================================
+- 앱의 '정보/출처' 화면과 발표 자료 마지막 장에 위 표시 예를 그대로 넣는다.
+- 직접 찍은 사진을 추가하면 이 파일에 '직접 촬영(날짜)'으로 함께 적는다.
+- 2터미널역, 개찰구 근접, 승차권 발매기 화면 등 부족한 장면은 직접 촬영 필요.

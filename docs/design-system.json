@@ -1,0 +1,291 @@
+{
+  "schemaVersion": "1.0",
+  "designId": "icn-subway-steps-navy-v01",
+  "evidence": {
+    "kind": "student-ai-draft",
+    "label": "Claude Code(artifact-design 스킬)로 만든 HTML 시안에서 정리한 값. 사용자가 1~4단계를 확인함.",
+    "selectedVariant": "docs/screens/ICN-subway-steps-v01.html의 남색 표지판 + 주황(직통)·파랑(일반) 시안, 밝은 테마 기준.",
+    "revision": {
+      "version": "v01",
+      "date": "2026-10-20",
+      "changes": [
+        "직통열차 강조색 #C25A00 → #B35300 (흰 글자 대비 4.42:1 → 5.06:1, WCAG 1.4.3 본문 4.5:1)",
+        "경로 구분색: 직통 #B35300, 일반 #0B6FA8(흰 글자 5.45:1). 현재 키 구조에 경로색 전용 키가 없어 components.itemCard에 값으로 기록함(openQuestions 참고)",
+        "상태 배지를 '확인됨 / 정보 오래됨' 두 가지로 정의. 정보 오래됨은 #8A5A00 on #FFF4D6(5.41:1)",
+        "v03 하단 메뉴 추가(경로·내 팁·설정, 최상위 화면에서만). 상단 지구본 언어 버튼과 톱니바퀴 제거 — 언어·테마는 설정에서만 바꿈(사용자 결정). 내 팁(S06) 화면 신설",
+        "v02 언어 전환: EN/한국어 알약 토글(높이 32, 표기 불일치) → 지구본 버튼(48×48)+언어 목록 시트. v03에서 사용자 결정으로 제거",
+        "v02 Codex 반박 반영: 역할 토큰 signage·onSignage·routeExpress·routeLocal·onRoute·warningSurface·warningText를 colors·colorsDark에 추가, divider를 CSS 실제 값(#D4D8E0 / #313C4E)과 일치, placeholder 색 지정",
+        "v02 다크 모드: tokens.colorsDark 추가(colors와 같은 키). 어두운 테마의 경로 버튼은 흰 글자 대신 #10141C 글자(직통 #FF9B45 8.80:1, 일반 #5CB8F0 8.40:1), 주요 행동 버튼은 #9DC1FF 바탕·#0A0F18 글자(10.51:1). 시스템/밝게/어둡게 선택은 S01 하단 '화면 테마'"
+      ]
+    }
+  },
+  "units": {
+    "source": "CSS px",
+    "flutter": "logicalPixel",
+    "color": "#RRGGBB",
+    "lineHeight": "fontSize의 배수",
+    "note": "물리 픽셀 수를 뜻하지 않는다. 웹 수치는 출발점이며 글꼴·배율·콘텐츠에 따라 Flutter에서 다시 확인한다."
+  },
+  "tokens": {
+    "colors": {
+      "primary": "#12305F",
+      "onPrimary": "#FFFFFF",
+      "surface": "#FFFFFF",
+      "surfaceContainer": "#F3F5F9",
+      "textPrimary": "#101B2E",
+      "textSecondary": "#4A5874",
+      "outline": "#6E7C97",
+      "divider": "#D4D8E0",
+      "error": "#B3261E",
+      "errorBorder": "#B3261E",
+      "errorSurface": "#FDEBEA",
+      "statusSurface": "#E3F4EA",
+      "statusText": "#1D7A46",
+      "signage": "#12305F",
+      "onSignage": "#FFFFFF",
+      "routeExpress": "#B35300",
+      "routeLocal": "#0B6FA8",
+      "onRoute": "#FFFFFF",
+      "warningSurface": "#FFF4D6",
+      "warningText": "#8A5A00"
+    },
+    "colorsDark": {
+      "primary": "#9DC1FF",
+      "onPrimary": "#0A0F18",
+      "surface": "#111A29",
+      "surfaceContainer": "#1A2638",
+      "textPrimary": "#EEF2F8",
+      "textSecondary": "#A9B6CC",
+      "outline": "#7D8BA5",
+      "divider": "#313C4E",
+      "error": "#FF8A80",
+      "errorBorder": "#FF8A80",
+      "errorSurface": "#3A1614",
+      "statusSurface": "#12301F",
+      "statusText": "#5DD490",
+      "signage": "#0B1E3D",
+      "onSignage": "#FFFFFF",
+      "routeExpress": "#FF9B45",
+      "routeLocal": "#5CB8F0",
+      "onRoute": "#10141C",
+      "warningSurface": "#33270C",
+      "warningText": "#F2C14E"
+    },
+    "typography": {
+      "title": {
+        "fontSize": 22,
+        "fontWeight": 700,
+        "lineHeight": 1.25
+      },
+      "section": {
+        "fontSize": 16,
+        "fontWeight": 700,
+        "lineHeight": 1.4
+      },
+      "body": {
+        "fontSize": 15,
+        "fontWeight": 400,
+        "lineHeight": 1.55
+      },
+      "label": {
+        "fontSize": 14,
+        "fontWeight": 700
+      },
+      "button": {
+        "fontSize": 16,
+        "fontWeight": 700
+      },
+      "caption": {
+        "fontSize": 12,
+        "fontWeight": 400,
+        "lineHeight": 1.5
+      }
+    },
+    "spacing": {
+      "page": 18,
+      "fieldGap": 6,
+      "section": 16,
+      "card": 12
+    },
+    "radii": {
+      "button": 12,
+      "input": 10,
+      "card": 14,
+      "hero": 14,
+      "chip": 999
+    },
+    "sizes": {
+      "inputHeight": 48,
+      "appBarHeight": 56
+    }
+  },
+  "components": {
+    "primaryButton": {
+      "background": "colors.primary (팁 올리기·로그인·다시 시도). S02의 '다음'만 경로색 colors.routeExpress / colors.routeLocal ('이전'은 secondaryButton)",
+      "foreground": "colors.onPrimary (경로색 버튼은 colors.onRoute). 두 테마 모두 같은 키를 쓰고 값은 colors / colorsDark에서 고른다",
+      "typography": "typography.button",
+      "radius": "radii.button",
+      "width": "가용 너비 (S02에서는 이전 1 : 다음 1.4 비율)",
+      "states": [
+        "기본",
+        "처리 중",
+        "누를 수 없음"
+      ],
+      "behavior": "팁 올리는 중에는 '올리는 중…'으로 바꾸고 중복 누름을 막는다. 첫 단계의 '이전'은 누를 수 없음, 마지막 단계의 '다음'은 '도착했어요'로 바뀐다."
+    },
+    "secondaryButton": {
+      "style": "연한 배경 버튼(colors.surfaceContainer) · 텍스트 버튼(+ 팁 등록, 상태 바꾸기)",
+      "foreground": "colors.textPrimary",
+      "typography": "typography.label",
+      "minHeight": "flutterAdaptations.sizes.minimumTap",
+      "labels": [
+        "이전",
+        "취소",
+        "+ 팁 등록"
+      ],
+      "behavior": "S03·S04의 취소는 들어오기 전 S02의 같은 단계로 돌아간다. 작성 중 내용 처리 방식은 미정이므로 ui-handoff.md의 질문을 따른다."
+    },
+    "textField": {
+      "text": "colors.textPrimary",
+      "border": "colors.outline",
+      "errorText": "colors.error",
+      "errorBorder": "colors.errorBorder",
+      "radius": "radii.input",
+      "labelStyle": "typography.label",
+      "states": [
+        "기본",
+        "입력됨",
+        "입력 오류",
+        "처리 중"
+      ],
+      "behavior": "라벨 위·입력칸·아래 줄(왼쪽 오류 문구, 오른쪽 글자 수 n/80 또는 n/150). 제목·위치는 앞뒤 공백 제거 후 1~80자, 메모는 선택 150자 이하. 오류 시 다른 입력값을 유지하고, 고치기 시작하면 그 칸의 오류를 지운다. S03의 단계 칸은 읽기 전용.",
+      "placeholder": "colors.textSecondary",
+      "helperText": "colors.textSecondary"
+    },
+    "itemCard": {
+      "background": "colors.surfaceContainer",
+      "title": "colors.textPrimary",
+      "radius": "radii.card",
+      "padding": "spacing.card",
+      "elements": [
+        "왼쪽 세로 띠(colors.routeExpress · colors.routeLocal · 준비 중 colors.outline)",
+        "경로 이름(직통열차 / 일반열차)",
+        "한 줄 설명과 표지판 병기(예: 직통열차 · Express Train)",
+        "단계 수"
+      ],
+      "behavior": "S01 경로 카드. 색만으로 경로를 구분하지 않고 이름·표지판 글자를 함께 표시한다. T2는 '준비 중' 배지와 함께 누를 수 없는 상태로 보여 주고, 누르면 안내 문구만 띄운다."
+    },
+    "statusBadge": {
+      "background": "colors.statusSurface",
+      "foreground": "colors.statusText",
+      "labels": [
+        "확인됨",
+        "정보 오래됨"
+      ],
+      "behavior": "색상과 상태 문구를 함께 사용한다. 확인됨은 statusSurface·statusText, 정보 오래됨과 '준비 중'은 colors.warningSurface·colors.warningText. 예시 팁에는 테두리만 있는 '예시' 배지를 덧붙인다. 상태 바꾸기 버튼은 그 팁을 올린 사용자에게만 보인다."
+    },
+    "page": {
+      "background": "colors.surface",
+      "padding": "spacing.page",
+      "behavior": "상단 남색 바(colors.signage 바탕·colors.onSignage 글자, 높이 sizes.appBarHeight)에 뒤로 가기(하위 화면에서만)·화면 제목. 언어·테마는 상단에 두지 않고 설정(S05)에서만 바꾼다. 하단 메뉴(경로 S01 / 내 팁 S06 / 설정 S05)는 최상위 화면에서만 보이고, S02 단계 안내·S03 팁 등록·S04 로그인에서는 숨긴다(S02는 이전·다음 하단 고정 바가 대신함). 메뉴 항목은 아이콘+글자, 최소 높이 60, 현재 화면은 aria-current=page와 colors.primary 16% 알약 배경·굵은 글자. 메뉴가 보이는 화면에는 뒤로 가기 버튼이 없다. 설정의 언어 목록은 각 언어를 그 언어로 표기(English / 한국어)하고 국기는 쓰지 않으며, 현재 언어는 colors.primary 테두리와 체크 표시. 좁은 화면·키보드·글자 확대에서 세로 스크롤과 읽는 순서를 확인한다. 시안의 장식용 휴대폰 테두리와 오른쪽 검토 패널은 구현하지 않는다."
+    },
+    "statusMessage": {
+      "icon": "없음(제목·설명·버튼만)",
+      "title": "typography.section",
+      "body": "typography.body · colors.textSecondary",
+      "action": "primaryButton",
+      "variants": {
+        "loading": "경로를 불러오는 중… (경로 카드 자리 표시 3개)",
+        "empty": "아직 경로가 없습니다. 경로가 추가되면 여기에 보입니다.",
+        "readFailure": "인터넷에 연결되지 않았습니다. 와이파이나 모바일 데이터를 켜고 다시 시도하세요. + 다시 시도"
+      },
+      "behavior": "빈 목록과 읽기 실패를 같은 문구로 쓰지 않는다. readFailure 문구는 연결 끊김이 확인된 경우에만 쓰고, 원인을 모르는 실패용 문구는 7장 API 오류 형식과 함께 정한다."
+    },
+    "feedbackBanner": {
+      "success": "colors.textPrimary 바탕 · colors.surface 글자의 하단 알림(약 2초)",
+      "failure": "colors.errorSurface 바탕 · colors.error 글자",
+      "behavior": "팁 등록 성공 시 '팁을 올렸습니다' 알림과 함께 S02의 같은 단계로 돌아가고 새 팁은 '확인됨'으로 보인다. 실패 시 작성한 값을 유지하고 다시 시도를 둔다."
+    }
+  },
+  "flutterAdaptations": {
+    "status": "이 앱에 적용할 이식 기준. 원래 CSS의 측정값과 구분한다.",
+    "typography": {
+      "body": {
+        "fontSize": 16
+      },
+      "label": {
+        "fontSize": 14
+      },
+      "caption": {
+        "fontSize": 12
+      }
+    },
+    "sizes": {
+      "minimumTap": 48,
+      "inputMinHeight": 48
+    },
+    "fontFamily": null,
+    "rules": [
+      "제목·버튼·모서리·색상은 위 토큰을 출발점으로 사용한다.",
+      "본문 15는 Flutter에서 16으로 키운다. 시안의 사진 출처 11px 글자는 12로 맞춘다.",
+      "누를 수 있는 영역은 최소 48×48 논리 픽셀을 확보한다(언어 전환 버튼 포함).",
+      "시안의 Noto Sans KR·Barlow Semi Condensed를 기기에 있다고 가정하지 않는다. 글꼴을 넣을지 플랫폼 기본 글꼴을 쓸지는 9장에서 정하고, 한글·영문 줄바꿈을 확인한다.",
+      "글자 확대를 막거나 고정 높이에 잘라 넣지 않는다. 단계 사진은 4:3 비율로 두고 사진이 없으면 '사진 준비 중' 자리표시를 쓴다.",
+      "입력칸 테두리는 바탕과 3:1 이상(현재 4.21:1), 보조 글자는 4.5:1 이상(현재 7.14:1)을 유지한다. 색을 바꾸면 대비를 다시 잰다(교재 5.3).",
+      "다크 모드: ThemeData를 밝은(tokens.colors)·어두운(tokens.colorsDark) 두 벌로 만들고 themeMode는 시스템 기본, S01 '화면 테마'에서 시스템/밝게/어둡게를 고른다. colors와 colorsDark는 키가 같으므로 컴포넌트는 키만 참조한다.",
+      "역할을 섞지 않는다: primary/onPrimary는 주요 행동 버튼, signage/onSignage는 상단 바·표지판 칩, routeExpress·routeLocal/onRoute는 경로 버튼·띠. 밝은 테마에서는 primary와 signage 값이 같지만 어두운 테마에서는 다르다.",
+      "경로색 위 글자는 반드시 같은 테마의 onRoute를 쓴다. 어두운 경로색에 흰 글자는 약 2.1:1, 밝은 경로색에 어두운 테마 글자는 3.5~3.8:1로 모두 미달이다.",
+      "입력 예시 글자(placeholder)는 textSecondary를 불투명도 1로 지정한다(밝게 7.14:1, 어둡게 8.52:1). 플랫폼 기본값에 맡기지 않는다.",
+      "사진은 두 테마에서 같은 원본을 쓰고 밝기를 바꾸지 않는다(표지판 색이 실제와 달라지지 않게)."
+    ]
+  },
+  "sourceFiles": [
+    {
+      "sha256": "22c03b1da92643ae3fe01d2bdea4a9325ebbc8d24c3b2664898b6fbf831196e9",
+      "scope": "S01~S04 클릭 시안 전체(:root 토큰, 구성요소, 상태 문구, 사진 4장 포함)",
+      "originalAuthoringPath": "docs/screens/ICN-subway-steps-v01.html",
+      "locationNote": "학생 작업 폴더 C:\\dev\\chapter05-ai 안의 파일. 사진 원본과 출처는 C:\\dev\\photo-sources\\airport-subway\\licenses.txt."
+    }
+  ],
+  "tokenEvidence": {
+    "colors.primary": ":root --cta (.btn.cta background)",
+    "colors.signage": ":root --navy (.bar, .sign background)",
+    "colors.routeExpress": ":root --express",
+    "colors.routeLocal": ":root --local",
+    "colors.onRoute": ":root --on-route (.btn.primary color)",
+    "colors.divider": ":root --divider (.tips border-top)",
+    "colors.surface": ":root --surface (.phone background)",
+    "colors.textPrimary": ":root --ink",
+    "colors.textSecondary": ":root --ink-2 (.lead, .meta, .hint)",
+    "typography.title": ".step-title",
+    "typography.section": ".tips-head h3",
+    "typography.body": "body",
+    "typography.label": ".field label",
+    "typography.button": ".btn",
+    "typography.caption": ".hint, .credit(11px → 12로 조정)",
+    "spacing.page": ".screen padding-inline",
+    "spacing.fieldGap": ".field gap",
+    "spacing.section": ".screen gap",
+    "spacing.card": ".tip padding-block",
+    "radii.button": ".btn",
+    "radii.input": ".field input",
+    "radii.card": ":root --r (.route, .photo)",
+    "radii.hero": ".photo (단계 사진)",
+    "radii.chip": ".pill, .badge",
+    "sizes.inputHeight": ".field input min-height",
+    "sizes.appBarHeight": ".bar 높이(패딩 포함 약 56)",
+    "colors.outline": ":root --line (.field input border, 흰 바탕 대비 4.21:1)"
+  },
+  "references": [
+    {
+      "title": "Flutter accessibility",
+      "url": "https://docs.flutter.dev/ui/accessibility",
+      "use": "터치 영역과 글자 확대 확인"
+    },
+    {
+      "title": "Use themes to share colors and font styles",
+      "url": "https://docs.flutter.dev/cookbook/design/themes",
+      "use": "ThemeData의 공통 스타일 적용"
+    }
+  ]
+}

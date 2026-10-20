@@ -1,0 +1,19 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - web/**
+  errors:
+    unused_import: warning
+
+# 9장 시작 프로젝트의 규칙을 그대로 더한다.
+linter:
+  rules:
+    - avoid_print
+    - use_build_context_synchronously
+    - prefer_const_constructors
+
+formatter:
+  page_width: 120
