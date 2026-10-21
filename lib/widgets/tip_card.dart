@@ -15,11 +15,16 @@ class TipStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    if (tip.isExample) return Pill(strings.example, background: c.textSecondary, foreground: c.surface);
+    if (tip.example) return Pill(strings.example, background: c.textSecondary, foreground: c.surface);
     return tip.status == TipStatus.verified
-        ? Pill(strings.checked(tip.verifiedAt), background: c.statusSurface, foreground: c.statusText, liveRegion: true)
+        ? Pill(
+            strings.checked(seoulDate(tip.verifiedAt)),
+            background: c.statusSurface,
+            foreground: c.statusText,
+            liveRegion: true,
+          )
         : Pill(
-            strings.outdated(tip.verifiedAt),
+            strings.outdated(seoulDate(tip.verifiedAt)),
             background: c.warningSurface,
             foreground: c.warningText,
             liveRegion: true,

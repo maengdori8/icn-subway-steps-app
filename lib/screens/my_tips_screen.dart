@@ -52,7 +52,8 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
     final request = ++_request;
     try {
       await app.loadRoutes(); // 경로 이름·단계 수('직통열차 · 5단계 중 3단계')
-      final tips = await app.repository.fetchMyTips(session);
+      // 서버는 내 것이면 예시 팁도 주지만, 시안처럼 내 팁 목록에서는 뺀다.
+      final tips = (await app.repository.fetchMyTips(session)).where((t) => !t.example).toList();
       if (!mounted || request != _request) return;
       setState(() {
         _tips = tips;
@@ -136,7 +137,7 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
       tip: tip,
       strings: s,
       where: s.whereStep(routeName, tip.stepNo, count),
-      canToggle: true,
+      canToggle: !tip.example,
       busy: busyTips.contains(tip.id),
       toggleBlocked: isTipBlocked(tip),
       onToggle: () => toggleTipStatus(tip),

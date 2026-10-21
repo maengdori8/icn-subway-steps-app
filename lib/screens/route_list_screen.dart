@@ -62,7 +62,7 @@ class _RouteListScreenState extends State<RouteListScreen> {
   Future<void> _open(RouteInfo route) async {
     final app = AppScope.read(context);
     if (!route.available) {
-      app.showMessage((_) => route.summary.of(app.language)); // T2: 안내만 띄우고 S01에 머문다
+      app.showMessage((s) => _subline(route, s, app.language)); // T2: 안내만 띄우고 S01에 머문다
       return;
     }
     await Navigator.of(context).push(
@@ -162,6 +162,10 @@ class _RouteListScreenState extends State<RouteListScreen> {
 
 // 경로 카드: 왼쪽 경로색 띠, 이름·설명·표지판 병기, 오른쪽 단계 수 또는 진행.
 // 색만으로 경로를 구분하지 않고 이름·표지판 글자를 함께 보인다.
+// 카드 설명 줄. 준비 중인 T2는 시안 문구('T2 안내는 준비 중입니다'), 나머지는 서버의 summary.
+String _subline(RouteInfo route, AppStrings s, AppLanguage lang) =>
+    !route.available && route.code == 'T2' ? s.t2msg : route.summary.of(lang);
+
 class _RouteCard extends StatelessWidget {
   const _RouteCard({required this.route, required this.progress, required this.onTap});
 
@@ -246,15 +250,16 @@ class _RouteCard extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 4),
-                            Text(route.summary.of(lang), style: TextStyle(fontSize: 14, color: c.textSecondary)),
-                            if (route.signKo != null && route.signEn != null)
+                            Text(_subline(route, s, lang), style: TextStyle(fontSize: 14, color: c.textSecondary)),
+                            // 표지판 병기: 서버가 따로 주지 않아 경로 이름(ko·en)으로 만든다(시안 .signline).
+                            if (route.available)
                               Text.rich(
                                 TextSpan(
                                   style: small,
                                   children: [
-                                    TextSpan(text: route.signKo, locale: AppLanguage.ko.locale),
+                                    TextSpan(text: route.name.ko, locale: AppLanguage.ko.locale),
                                     const TextSpan(text: ' · '),
-                                    TextSpan(text: route.signEn, locale: AppLanguage.en.locale),
+                                    TextSpan(text: route.name.en, locale: AppLanguage.en.locale),
                                     const TextSpan(text: ' · '),
                                     TextSpan(text: s.airportRailroadKo, locale: AppLanguage.ko.locale),
                                     const TextSpan(text: ' '),

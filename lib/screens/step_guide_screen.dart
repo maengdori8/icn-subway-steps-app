@@ -6,6 +6,7 @@ import 'package:flutter/scheduler.dart';
 import '../l10n/app_strings.dart';
 import '../models/guide_step.dart';
 import '../models/route_info.dart';
+import '../models/step_photos.dart';
 import '../models/tip.dart';
 import '../repositories/subway_repository.dart';
 import '../state/app_controller.dart';
@@ -99,7 +100,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     final request = ++_tipsRequest;
     setState(() => _tipsPhase = _TipsPhase.loading);
     try {
-      final tips = await _app.repository.fetchTips(_code, step.stepNo);
+      final tips = await _app.repository.fetchTips(_code, step.stepNo, session: _app.session);
       if (!mounted || request != _tipsRequest) return; // 그사이 단계를 옮겼으면 버린다
       setState(() {
         _tips = tips;
@@ -123,7 +124,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
       return;
     }
     setState(() {
-      if (!_tips.any((t) => t.id == tip.id)) _tips = [..._tips, tip];
+      if (!_tips.any((t) => t.id == tip.id)) _tips = [tip, ..._tips]; // 서버 목록처럼 새 팁이 먼저
       _freshTipId = tip.id;
     });
     _revealFreshTip();
@@ -338,11 +339,11 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
         ),
       ),
       const Gap(6),
-      if (step.photoUrl == null)
+      if (stepPhotoFor(step.photoKey) == null)
         Text(s.noPhotoSub, style: TextStyle(fontSize: 14, color: c.textSecondary))
-      else if (step.photoCredit != null)
+      else
         MixedText(
-          step.photoCredit!,
+          stepPhotoFor(step.photoKey)!.credit,
           language: lang,
           style: TextStyle(fontSize: 12, color: c.textSecondary),
         ),
@@ -357,14 +358,17 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
         child: Text(step.title.of(lang), style: Theme.of(context).textTheme.titleLarge),
       ),
       const Gap(10),
-      StepActions(lines: step.actions.of(lang), color: routeColor, language: lang),
+      StepActions(lines: step.instructions.of(lang), color: routeColor, language: lang),
       const Gap(4),
       Row(
         children: [
           ExcludeSemantics(child: Icon(Icons.elevator_outlined, size: 18, color: c.textSecondary)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(s.elevator, style: TextStyle(fontSize: 14, color: c.textSecondary)),
+            child: Text(
+              step.elevator == null ? s.elevator : s.elevatorAt(step.elevator!.of(lang)),
+              style: TextStyle(fontSize: 14, color: c.textSecondary),
+            ),
           ),
         ],
       ),
@@ -379,8 +383,8 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     final older = _tips.where((t) => t.status == TipStatus.outdated).toList();
 
     Widget card(Tip tip) {
-      final mine = session != null && !tip.isExample && tip.ownerId == session.userId;
-      final author = tip.isExample ? s.bySample : (mine ? s.byYou : s.byTraveler);
+      final mine = session != null && !tip.example && tip.ownerId == session.userId;
+      final author = tip.example ? s.bySample : (mine ? s.byYou : s.byTraveler);
       return Padding(
         key: _tipKeys.putIfAbsent(tip.id, GlobalKey.new),
         padding: const EdgeInsets.only(bottom: 10),

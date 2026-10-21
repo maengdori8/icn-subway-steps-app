@@ -19,7 +19,7 @@ class TipFormErrors {
   bool get isEmpty => title == null && location == null && note == null;
 }
 
-// 제목·위치: 앞뒤 공백을 뺀 뒤 1~80자. 메모: 선택, 입력한 그대로 150자 이하(시안 v03과 같음).
+// 제목·위치: 앞뒤 공백을 뺀 뒤 1~80자. 메모: 선택, 앞뒤 공백을 뺀 뒤 150자 이하(서버 계약과 같음).
 TipFormErrors validateTip({required String title, required String location, required String note}) {
   TipFieldError? required80(String value) {
     final length = codePointLength(value.trim());
@@ -31,10 +31,9 @@ TipFormErrors validateTip({required String title, required String location, requ
   return TipFormErrors(
     title: required80(title),
     location: required80(location),
-    note: codePointLength(note) > tipNoteMax ? TipFieldError.tooLong150 : null,
+    note: codePointLength(note.trim()) > tipNoteMax ? TipFieldError.tooLong150 : null,
   );
 }
 
 // 화면의 글자 수 표시(n/80, n/150). 검증과 같은 기준으로 센다.
-int tipFieldCount(String value, {required bool isNote}) =>
-    isNote ? codePointLength(value) : codePointLength(value.trim());
+int tipFieldCount(String value) => codePointLength(value.trim());

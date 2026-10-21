@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_language.dart';
 import '../l10n/app_strings.dart';
 import '../models/guide_step.dart';
+import '../models/step_photos.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'mixed_text.dart';
@@ -157,8 +158,8 @@ class StepPhoto extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final url = step.photoUrl;
-    if (url == null) {
+    final photo = stepPhotoFor(step.photoKey);
+    if (photo == null) {
       // 4:3 칸 안에는 아이콘과 '사진 준비 중'만 둔다. 설명 줄('아래 표지판과 안내를 따라가세요')은
       // 사진 출처와 같은 자리(칸 아래)에 보여, 글자를 키워도 칸 안이 넘치지 않는다.
       return Container(
@@ -181,10 +182,7 @@ class StepPhoto extends StatelessWidget {
     }
     // 사진은 두 테마에서 같은 원본을 쓰고 밝기를 바꾸지 않는다. 대체 문구는 지금 언어의 표지판 이름 하나로.
     final alt = language == AppLanguage.ko ? step.signKo : step.signEn;
-    final image = url.startsWith('http')
-        ? Image.network(url, fit: BoxFit.cover, semanticLabel: alt)
-        : Image.asset(url, fit: BoxFit.cover, semanticLabel: alt);
-    return image;
+    return Image.asset(photo.asset, fit: BoxFit.cover, semanticLabel: alt);
   }
 }
 

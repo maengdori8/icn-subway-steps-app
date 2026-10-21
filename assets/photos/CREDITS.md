@@ -9,4 +9,4 @@
 | local_concourse.jpg | wikimedia/202403_AREX_Local_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg | MNXANL / Wikimedia Commons https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg | CC BY-SA 4.0 |
 | local_platform.jpg | wikimedia/202403_AREX_Local_Platform_1,2_of_Incheon_International_Airport_Terminal_1_Station.jpg | MNXANL / Wikimedia Commons https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Platform_1,2_of_Incheon_International_Airport_Terminal_1_Station.jpg | CC BY-SA 4.0 |
 
-주의: T1 입국장 사진은 코로나 시기 촬영으로 보인다(원본 licenses.txt 참고). 현장 사진으로 바꾸면 이 표와 lib/repositories/fake_seed.dart의 photo_credit을 함께 고친다.
+주의: T1 입국장 사진은 코로나 시기 촬영으로 보인다(원본 licenses.txt 참고). 현장 사진으로 바꾸면 이 표와 lib/models/step_photos.dart(서버 photoKey → 사진·출처)를 함께 고친다.

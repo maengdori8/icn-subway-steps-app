@@ -17,15 +17,15 @@ class FakeSubwayRepository implements SubwayRepository {
     this.emptyRoutes = false,
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now,
-       _tips = fakeTipsJson.map(Tip.fromJson).toList();
+       _tips = Tip.listFromJson(fakeTipsResponse);
 
   final Duration delay; // 로딩 표시를 보기 위한 인위적 지연(600~700ms). 실제 응답 속도가 아니다
   final bool emptyRoutes; // 빈 목록 상태를 보기 위한 설정
   final DateTime Function() _now;
   final List<Tip> _tips;
   final Map<FakeOperation, List<RepositoryErrorCode>> _queuedFailures = {};
-  final Map<String, int> _userIds = {fakeDemoUsername: fakeDemoUserId};
-  int _nextTipId = 1001;
+  final Map<String, int> _userIds = {fakeDemoUsername: fakeDemoUserId, 'student02': fakeSampleOwnerId};
+  int _nextTipId = 9; // 서버 시드(7·8번) 다음 번호
 
   // 다음 [times]번의 [operation] 요청을 [code]로 실패시킨다. 위젯 검사와 상태 확인용이다.
   void failNext(FakeOperation operation, RepositoryErrorCode code, {int times = 1}) {
@@ -42,10 +42,7 @@ class FakeSubwayRepository implements SubwayRepository {
     }
   }
 
-  String _today() {
-    final d = _now();
-    return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  }
+  DateTime _nowUtc() => _now().toUtc();
 
   void _requireSession(UserSession? session) {
     if (session == null || _userIds[session.username] != session.userId) {
@@ -53,34 +50,43 @@ class FakeSubwayRepository implements SubwayRepository {
     }
   }
 
+  // 서버처럼 mine은 요청한 사용자의 팁인지로 정하고, 목록은 번호 내림차순(새 팁 먼저)으로 준다.
+  List<Tip> _view(Iterable<Tip> tips, UserSession? session) {
+    final list = [
+      for (final t in tips) Tip.fromJson({...t.toJson(), 'mine': session != null && t.ownerId == session.userId}),
+    ]..sort((a, b) => b.id.compareTo(a.id));
+    return List.unmodifiable(list);
+  }
+
   @override
   Future<List<RouteInfo>> fetchRoutes() async {
     await _wait(FakeOperation.routes);
     if (emptyRoutes) return const [];
-    return List.unmodifiable(fakeRoutesJson.map(RouteInfo.fromJson));
+    return List.unmodifiable(RouteInfo.listFromJson(fakeRoutesResponse));
   }
 
   @override
   Future<List<GuideStep>> fetchSteps(String routeCode) async {
     await _wait(FakeOperation.steps);
-    final steps = fakeStepsJson[routeCode];
-    if (steps == null) {
-      throw RepositoryException(RepositoryErrorCode.notFound, 'no steps for $routeCode');
+    final response = fakeStepsResponses[routeCode];
+    if (response == null) {
+      throw RepositoryException(RepositoryErrorCode.notFound, 'no route $routeCode');
     }
-    return List.unmodifiable(steps.map(GuideStep.fromJson));
+    return List.unmodifiable(GuideStep.listFromJson(response));
   }
 
   @override
-  Future<List<Tip>> fetchTips(String routeCode, int stepNo) async {
+  Future<List<Tip>> fetchTips(String routeCode, int stepNo, {UserSession? session}) async {
     await _wait(FakeOperation.tips);
-    return List.unmodifiable(_tips.where((t) => t.route == routeCode && t.stepNo == stepNo));
+    return _view(_tips.where((t) => t.route == routeCode && t.stepNo == stepNo), session);
   }
 
+  // 서버 GET /api/me/tips와 같이 내 것이면 예시 팁도 준다(화면에서 거른다).
   @override
   Future<List<Tip>> fetchMyTips(UserSession session) async {
     await _wait(FakeOperation.myTips);
     _requireSession(session);
-    return List.unmodifiable(_tips.where((t) => t.ownerId == session.userId && !t.isExample));
+    return _view(_tips.where((t) => t.ownerId == session.userId), session);
   }
 
   @override
@@ -88,11 +94,12 @@ class FakeSubwayRepository implements SubwayRepository {
     await _wait(FakeOperation.createTip);
     _requireSession(session);
     final errors = validateTip(title: draft.title, location: draft.location, note: draft.note ?? '');
-    final steps = fakeStepsJson[draft.route];
+    final steps = fakeStepsResponses[draft.route]?['steps'] as List?;
     if (!errors.isEmpty || steps == null || draft.stepNo < 1 || draft.stepNo > steps.length) {
       throw const RepositoryException(RepositoryErrorCode.validation, 'invalid tip');
     }
     final note = draft.note?.trim();
+    final now = _nowUtc();
     final tip = Tip(
       id: _nextTipId++,
       route: draft.route,
@@ -101,13 +108,16 @@ class FakeSubwayRepository implements SubwayRepository {
       location: draft.location.trim(),
       note: note == null || note.isEmpty ? null : note,
       status: TipStatus.verified,
+      verifiedAt: now,
+      createdAt: now,
       ownerId: session.userId,
-      verifiedAt: _today(),
+      mine: true,
     );
     _tips.add(tip);
     return tip;
   }
 
+  // 서버와 같이 올린 사람만 바꾼다(예시 팁도 올린 사람은 바꿀 수 있고, 화면이 버튼을 숨긴다).
   @override
   Future<Tip> updateTipStatus(int tipId, TipStatus status, UserSession session) async {
     await _wait(FakeOperation.updateStatus);
@@ -115,12 +125,11 @@ class FakeSubwayRepository implements SubwayRepository {
     final index = _tips.indexWhere((t) => t.id == tipId);
     if (index < 0) throw RepositoryException(RepositoryErrorCode.notFound, 'tip $tipId');
     final tip = _tips[index];
-    if (tip.isExample || tip.ownerId != session.userId) {
+    if (tip.ownerId != session.userId) {
       throw const RepositoryException(RepositoryErrorCode.forbidden, 'only the owner can change status');
     }
-    final updated = tip.copyWith(status: status, verifiedAt: _today());
-    _tips[index] = updated;
-    return updated;
+    _tips[index] = tip.copyWith(status: status, verifiedAt: _nowUtc());
+    return _view([_tips[index]], session).single;
   }
 
   @override
@@ -131,6 +140,12 @@ class FakeSubwayRepository implements SubwayRepository {
       throw const RepositoryException(RepositoryErrorCode.invalidCredentials);
     }
     final id = _userIds.putIfAbsent(name, () => fakeDemoUserId + _userIds.length);
-    return UserSession(userId: id, username: name, accessToken: 'fake-session-$id');
+    // 서버 로그인 응답과 같은 모양을 읽는다(토큰은 의미 없는 표시 값).
+    return UserSession.fromLoginJson({
+      'accessToken': 'fake-session-$id',
+      'tokenType': 'Bearer',
+      'expiresIn': 1800,
+      'user': {'id': id, 'username': name},
+    });
   }
 }

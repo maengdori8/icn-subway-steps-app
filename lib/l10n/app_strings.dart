@@ -21,6 +21,7 @@ abstract class AppStrings {
   String get scopeNote;
   String get t2;
   String get soon;
+  String get t2msg; // 준비 중 경로 카드 설명·누르면 띄우는 안내(시안 T2 문구)
   String get steps;
   String get resume;
   String get restart;
@@ -47,6 +48,7 @@ abstract class AppStrings {
   String get roleHere;
   String get roleFind;
   String get elevator;
+  String elevatorAt(String where); // [추가] 서버가 엘리베이터 위치를 줄 때
   String get noPhoto;
   String get noPhotoSub;
   String get doneTitle;
@@ -164,6 +166,9 @@ class _En extends AppStrings {
   String get t2 => 'From T2 arrivals';
   @override
   String get soon => 'Coming soon';
+
+  @override
+  String get t2msg => 'T2 directions are coming soon.';
   @override
   String get steps => 'steps';
   @override
@@ -209,6 +214,9 @@ class _En extends AppStrings {
   String get roleFind => 'Look for this sign';
   @override
   String get elevator => 'Elevator: being checked on site';
+
+  @override
+  String elevatorAt(String where) => 'Elevator: $where';
   @override
   String get noPhoto => 'Photo coming soon';
   @override
@@ -408,6 +416,9 @@ class _Ko extends AppStrings {
   String get t2 => 'T2 입국장에서 출발';
   @override
   String get soon => '준비 중';
+
+  @override
+  String get t2msg => 'T2 안내는 준비 중입니다.';
   @override
   String get steps => '단계';
   @override
@@ -453,6 +464,9 @@ class _Ko extends AppStrings {
   String get roleFind => '이 표지판을 찾으세요';
   @override
   String get elevator => '엘리베이터: 현장 확인 중';
+
+  @override
+  String elevatorAt(String where) => '엘리베이터: $where';
   @override
   String get noPhoto => '사진 준비 중';
   @override

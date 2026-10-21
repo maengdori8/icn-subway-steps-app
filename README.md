@@ -22,7 +22,7 @@ flutter run -d emulator-5554        # 또는 -d chrome
 | --- | --- |
 | lib/main.dart, app.dart | 시작, MaterialApp(밝게·어둡게 테마, 언어, 하단 알림) |
 | lib/screens/ | S01 경로 목록, S02 단계 안내, S03 팁 등록, S04 로그인, S05 설정, S06 내 팁, 하단 메뉴(home_shell) |
-| lib/models/ | 경로·단계·팁·로그인 결과(JSON 이름은 docs/ui-handoff.md 후보의 snake_case) |
+| lib/models/ | 경로·단계·팁·로그인 결과(서버 계약 camelCase, 응답 봉투 listFromJson), step_photos.dart(photoKey → 앱 사진·출처) |
 | lib/repositories/ | 저장소 약속(subway_repository.dart), 가짜 저장소와 처음 자료(fake_*), HTTP 뼈대(http_subway_repository.dart) |
 | lib/state/app_controller.dart | 테마·언어·경로별 진행(기기에 기억), 로그인(메모리), 경로·단계 목록 |
 | lib/theme/ | design-system.json의 색(colors / colorsDark)·글자·간격 |

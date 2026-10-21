@@ -9,7 +9,7 @@ import 'helpers.dart';
 void main() {
   FakeSubwayRepository repo({int ms = 0}) => FakeSubwayRepository(
     delay: Duration(milliseconds: ms),
-    now: () => DateTime(2026, 10, 20),
+    now: () => DateTime.utc(2026, 10, 20, 3),
   );
 
   testWidgets("예시 팁은 'Example' 배지와 작성자 'Sample', 상태 바꾸기 없음", (tester) async {
@@ -154,7 +154,7 @@ void main() {
     app.signIn(demoSession); // 요청이 가는 동안 다시 로그인(새 세션)
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
-    expect(app.isTipBlocked(2), isFalse);
+    expect(app.isTipBlocked(8), isFalse);
     expect(find.text("You can't change this tip right now. Log in again, then try."), findsNothing);
     expect(tester.widget<TextButton>(find.widgetWithText(TextButton, 'Mark as checked')).onPressed, isNotNull);
   });
