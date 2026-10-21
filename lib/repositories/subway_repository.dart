@@ -28,10 +28,32 @@ enum RepositoryErrorCode {
 }
 
 class RepositoryException implements Exception {
-  const RepositoryException(this.code, [this.message = '']);
+  const RepositoryException(this.code, [this.message = '', this.fieldErrors = const {}, this.serverCode]);
+
+  // 서버 오류 본문 {code, message, errors}를 앱의 실패 종류로 바꾼다(서버 docs/api-spec.yaml Error 스키마).
+  // errors의 키(title·location·note·route·stepNo·status…)는 fieldErrors로 남겨 화면이 칸과 이을 수 있게 한다.
+  // 서버 message·errors 문구는 한국어뿐이라 화면에 그대로 쓰지 않는다.
+  factory RepositoryException.fromErrorResponse(int statusCode, Map<String, dynamic>? body) {
+    // 형식이 틀린 오류 본문(code가 문자열이 아님 등)에서도 예외 없이 읽는다. 상태 코드 분류가 우선이다.
+    final rawCode = body?['code'];
+    final serverCode = rawCode is String ? rawCode : null;
+    final errors = body?['errors'];
+    final fields = errors is Map ? errors.keys.map((k) => k.toString()).toSet() : const <String>{};
+    final code = switch (statusCode) {
+      401 when serverCode == 'LOGIN_FAILED' => RepositoryErrorCode.invalidCredentials,
+      401 => RepositoryErrorCode.unauthorized,
+      403 => RepositoryErrorCode.forbidden,
+      404 => RepositoryErrorCode.notFound,
+      400 || 409 || 415 => RepositoryErrorCode.validation,
+      _ => RepositoryErrorCode.server,
+    };
+    return RepositoryException(code, 'HTTP $statusCode ${serverCode ?? ''}', fields, serverCode);
+  }
 
   final RepositoryErrorCode code;
   final String message; // 개발자용 설명. 화면 문구는 l10n/app_strings.dart가 정한다
+  final Set<String> fieldErrors; // 서버 errors의 키(입력칸 이름)
+  final String? serverCode; // 서버 Error.code(VALIDATION_FAILED 등)
 
   @override
   String toString() => 'RepositoryException(${code.name}${message.isEmpty ? '' : ': $message'})';

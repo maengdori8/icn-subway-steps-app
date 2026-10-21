@@ -52,6 +52,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   int? _freshTipId;
   Timer? _freshTimer;
   final Map<int, GlobalKey> _tipKeys = {};
+  late int _seenGeneration;
 
   String get _code => widget.route.code;
   int get _count => _steps?.length ?? widget.route.stepCount;
@@ -62,8 +63,21 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   void initState() {
     super.initState();
     _app = AppScope.read(context);
+    _seenGeneration = _app.sessionGeneration;
     _app.tipsRevision.addListener(_onTipPosted);
     _loadSteps();
+  }
+
+  // 로그인·로그아웃(세션 세대가 바뀜)이면 팁을 다시 읽는다. 서버의 mine은 요청 토큰으로 정해지기 때문.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final generation = AppScope.of(context).sessionGeneration;
+    if (generation == _seenGeneration) return;
+    _seenGeneration = generation;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _loadTips();
+    });
   }
 
   @override
@@ -98,17 +112,24 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     final step = _step;
     if (step == null) return;
     final request = ++_tipsRequest;
+    final session = _app.session;
+    final generation = _app.sessionGeneration;
     setState(() => _tipsPhase = _TipsPhase.loading);
     try {
-      final tips = await _app.repository.fetchTips(_code, step.stepNo, session: _app.session);
+      final tips = await _app.repository.fetchTips(_code, step.stepNo, session: session);
       if (!mounted || request != _tipsRequest) return; // 그사이 단계를 옮겼으면 버린다
       setState(() {
         _tips = tips;
         _tipsPhase = _TipsPhase.ready;
       });
       _revealFreshTip();
-    } on RepositoryException {
+    } on RepositoryException catch (e) {
       if (!mounted || request != _tipsRequest) return;
+      // 만료·무효 토큰은 공개 조회도 401이다. 그 세션을 끝내면(로그아웃) 이 화면이 익명으로 다시 읽는다.
+      if (e.code == RepositoryErrorCode.unauthorized && session != null && _app.sessionExpired(generation)) {
+        _app.showMessage((s) => s.loggedOut);
+        return;
+      }
       setState(() => _tipsPhase = _TipsPhase.failed);
     }
   }
@@ -118,7 +139,8 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     final tip = _app.lastPostedTip;
     final step = _step;
     if (!mounted || tip == null || step == null || tip.route != _code || tip.stepNo != step.stepNo) return;
-    if (_tipsPhase != _TipsPhase.ready) {
+    // 다른 세션이 올린 팁(로그인을 바꾼 뒤 늦게 끝난 등록)이면 그 응답의 mine을 쓰지 않고 지금 세션으로 다시 읽는다.
+    if (_tipsPhase != _TipsPhase.ready || _app.lastPostedGeneration != _app.sessionGeneration) {
       _freshTipId = tip.id;
       _loadTips();
       return;
@@ -383,7 +405,8 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     final older = _tips.where((t) => t.status == TipStatus.outdated).toList();
 
     Widget card(Tip tip) {
-      final mine = session != null && !tip.example && tip.ownerId == session.userId;
+      // '내가 올림'은 서버가 토큰으로 계산한 mine을 쓴다. 로그인·로그아웃하면 목록을 다시 읽어 mine을 맞춘다.
+      final mine = session != null && !tip.example && tip.mine;
       final author = tip.example ? s.bySample : (mine ? s.byYou : s.byTraveler);
       return Padding(
         key: _tipKeys.putIfAbsent(tip.id, GlobalKey.new),

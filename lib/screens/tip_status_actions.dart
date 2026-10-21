@@ -31,14 +31,18 @@ mixin TipStatusActions<T extends StatefulWidget> on State<T> {
     });
     try {
       final updated = await app.repository.updateTipStatus(tip.id, tip.status.toggled, session);
-      if (!mounted) return;
+      // 그사이 다른 세션이 되었으면 앞 세션 기준 응답(mine 등)을 목록에 넣지 않는다(새 세션은 목록을 다시 읽는다).
+      if (!mounted || app.sessionGeneration != generation) return;
       setState(() => applyUpdatedTip(updated));
     } on RepositoryException catch (e) {
       // 그사이 다시 로그인했으면 앞 세션의 실패는 버린다(새 로그인 직후 다시 막지 않게).
       if (!mounted || app.sessionGeneration != generation) return;
-      final notice = e.code == RepositoryErrorCode.forbidden || e.code == RepositoryErrorCode.unauthorized
-          ? TipNotice.forbidden
-          : TipNotice.toggleFailed;
+      // 401(만료·무효 토큰): 그 세션을 끝낸다. 로그아웃되면 화면이 익명으로 다시 읽고 상태 바꾸기 버튼은 사라진다.
+      if (e.code == RepositoryErrorCode.unauthorized && app.sessionExpired(generation)) {
+        app.showMessage((s) => s.loggedOut);
+        return;
+      }
+      final notice = e.code == RepositoryErrorCode.forbidden ? TipNotice.forbidden : TipNotice.toggleFailed;
       final onScreen = isTipOnScreen(tip);
       if (notice == TipNotice.forbidden) app.blockTip(tip.id);
       if (onScreen) setState(() => tipNotices[tip.id] = notice);

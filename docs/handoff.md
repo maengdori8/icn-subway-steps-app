@@ -49,8 +49,8 @@ loadError(원인 모를 읽기 실패), loadingSteps, elevatorAt(서버가 엘�
 
 - **결정(2026-10-21, 사용자):** 서버 계약(camelCase, `/api/me/tips`)을 그대로 두고 앱 모델을 서버에 맞춘다. 서버 세션이 사용자 말을 전달해 앱 모델을 바꿨다.
 - 앱 모델(lib/models)의 fromJson·toJson은 이제 서버 스키마와 같은 이름이다. 가짜 저장소의 처음 자료(fake_seed.dart)도 서버 응답 모양(봉투·camelCase, 시드 팁 7·8번)으로 두어 같은 fromJson을 지난다.
-- 서버가 주지 않아 앱이 정하는 것: 경로의 출발 터미널(code가 T2면 T2), S01 표지판 병기 줄(경로 이름 ko·en), 준비 중 T2 카드 설명과 안내(시안 문구 t2msg), 사진 파일과 출처(photoKey → lib/models/step_photos.dart).
-- 앱만의 규칙: 예시 팁(example)은 올린 사람이어도 상태 바꾸기 버튼을 숨기고, 내 팁(S06)에서 뺀다(서버는 올린 사람이면 허용·포함). '내가 올림'은 서버 mine 대신 ownerId와 로그인 user.id를 비교한다(로그인 직후 목록을 다시 읽지 않아도 맞게).
+- 서버가 주지 않아 앱이 정하는 것: 경로별 상수 routeDisplays(lib/models/route_info.dart: 출발 터미널, S01 표지판 병기 줄), 준비 중 T2 카드 설명과 안내(시안 문구 t2msg), 사진 파일과 출처(photoKey → lib/models/step_photos.dart).
+- 앱만의 규칙: 예시 팁(example)은 올린 사람이어도 상태 바꾸기 버튼을 숨기고, 내 팁(S06)에서 뺀다(서버는 올린 사람이면 허용·포함). '내가 올림'은 서버가 토큰으로 계산한 mine을 쓰고, 로그인·로그아웃으로 세션이 바뀌면 S02가 팁을 다시 읽어 mine을 맞춘다.
 - 글자 수: 앱도 서버처럼 제목·위치·메모 모두 앞뒤 공백을 뺀 뒤 코드 포인트로 센다(메모를 입력 그대로 세던 시안 방식에서 바꿈).
 
 ## 3. 10장에서 바꿀 곳
@@ -70,13 +70,13 @@ loadError(원인 모를 읽기 실패), loadingSteps, elevatorAt(서버가 엘�
 Tip: id, route(EXPRESS/LOCAL), stepNo, title, location, note|null, status(VERIFIED/OUTDATED), verifiedAt·createdAt(UTC ISO 시각 → 배지는 서울 날짜 seoulDate), ownerId, mine, example.
 
 ### 연결할 때 주의
-1. 무효·만료 토큰이 붙으면 공개 GET도 401이다. 401이면 세션을 버리고(signOut) 익명으로 다시 부르거나 로그인 화면으로 보낸다.
-2. 본문은 utf8.decode(response.bodyBytes)로 읽는다. 오류 message는 한국어뿐이므로 화면 문구는 errors의 키(title·location·note·route·stepNo·status)로 앱이 고른다.
+1. 무효·만료 토큰이 붙으면 공개 GET도 401이다. 앱은 401을 받으면 요청 당시 세션이 지금 세션일 때만 로그아웃(AppController.sessionExpired)하고, S02는 익명으로 다시 읽고 S06은 로그인 안내로 바뀐다(이미 구현·검사함).
+2. 본문은 utf8.decode(bodyBytes)로 읽는다(HttpSubwayRepository가 이미 함). 오류 message는 한국어뿐이므로 RepositoryException.fromErrorResponse가 errors의 키를 fieldErrors(title·location·note·route·stepNo·status)로 남기고, 화면 문구는 앱이 고른다.
 3. 서버는 127.0.0.1에만 열려 있어 실기기에서는 닿지 않는다(에뮬레이터는 10.0.2.2:8097).
 4. 표본 계정: student01(101)·student02(102). 비밀번호는 서버 docs/requirements.md의 공개 표본 값(이 문서에 적지 않음).
 
 ### 바꿀 파일 / 그대로 둘 파일
-- 바꿀 것: lib/repositories/http_subway_repository.dart(실제 요청), lib/main.dart(FakeSubwayRepository → HttpSubwayRepository), pubspec.yaml(http 패키지, 승인 후), android/app/src/main/AndroidManifest.xml(INTERNET 권한, http:// 개발 주소면 cleartext 허용).
+- 바꿀 것: ApiTransport 구현 하나(http 패키지 승인 후, 연결 실패는 offline으로) → main.dart에서 HttpSubwayRepository(transport: …)로 교체, android/app/src/main/AndroidManifest.xml(INTERNET 권한, http:// 개발 주소면 cleartext 허용). 경로·본문·헤더·응답 읽기·오류 매핑은 http_subway_repository.dart에 이미 있고 test/api_contract_test.dart가 명세 예시로 검사한다.
 - 로그인 결과: UserSession을 로그인 응답으로 채운다. 지금은 앱 메모리에만 두고 기기에 저장하지 않는다(앱을 끄면 로그아웃). 기기에 남길지는 10장에서 정한다.
 - 그대로 둘 것: lib/models(서버 계약과 같음), lib/theme, lib/widgets, lib/screens, lib/l10n, lib/validation.
 - 401·403·통신 실패 때 입력 유지: S03은 실패해도 값을 지우지 않고(401이면 다시 로그인 후 같은 화면으로 돌아옴), 위젯 검사 add_tip_test.dart에 실패 경우가 있다. 실제 서버 응답으로 다시 확인한다.
@@ -86,7 +86,7 @@ Tip: id, route(EXPRESS/LOCAL), stepNo, title, location, note|null, status(VERIFI
 - TalkBack 실제 낭독(제목 초점 이동, 단계 제목 live region, 혼합 언어 구절의 목소리 전환): 미확인.
 - 한글 낱말 단위 줄바꿈(4차 VIS-05): Flutter는 keep-all을 지원하지 않아 음절 단위로 끊길 수 있다. 미확인.
 
-## 4. Codex 반박 리뷰 판정 (C:\dev\CLAUDE.md 규칙, 3회)
+## 4. Codex 반박 리뷰 판정 (C:\dev\CLAUDE.md 규칙)
 
 | 회차 | 지적 | 판정 | 이유 | 조치 |
 | --- | --- | --- | --- | --- |
@@ -95,7 +95,12 @@ Tip: id, route(EXPRESS/LOCAL), stepNo, title, location, note|null, status(VERIFI
 | 1 | [중간] 재로그인 화면을 취소해도 막힘이 풀림 | 수용 | 로그인 결과를 보지 않고 세션 존재만 확인 | LoginScreen이 true를 돌려줄 때만 해제(S03도 같게). 검사 추가 |
 | 2 | [중간] S06에서 탭을 오가면 막힘이 풀림 | 수용 | 막힘이 화면 State에 있어 탭 전환 때 사라짐 | 막힘을 AppController(세션 단위)로 옮기고 로그인·로그아웃 때 비움. 검사 추가 |
 | 2 | [중간] 재로그인 뒤 도착한 앞 세션의 401이 새 세션을 다시 막음 | 수용 | 응답이 요청 당시 세션인지 보지 않음 | 세션 세대 번호를 요청 때 기록하고 달라졌으면 무시. 검사 추가(고치기 전 실패 확인) |
+| 3 | (서버 계약 camelCase 맞춤) 지적 없음·승인. 제안: 서울 날짜 경계 검사 보강 | 수용 | 자정 직전·정각, 월말·연말, +09:00 오프셋 검사가 없었다 | repository_test.dart에 경계 검사 추가 |
+| 4 | [중간] 앞 세션의 상태 변경 성공 응답이 새 세션 목록의 mine을 덮음 | 수용 | 성공 경로가 세션 세대를 보지 않음(mine을 쓰게 되며 생긴 문제) | 성공 응답도 세대가 다르면 버림. 지연을 바꿔 순서를 재현하는 검사 추가(고치기 전 실패 확인) |
+| 4 | [중간] 만료 토큰으로 공개 팁 조회가 401을 계속 받고 복구되지 않음 | 수용 | S02가 401을 일반 실패로만 처리, 다시 시도도 같은 토큰 | AppController.sessionExpired(요청 당시 세션일 때만 로그아웃) → S02는 익명으로 다시 읽음, S06은 로그인 안내. 'Logged out' 알림. 검사 추가 |
+| 4 | [중간] 날짜 형식·모르는 상태값 응답이 RepositoryException이 되지 않음 | 수용 | _read가 TypeError만 바꿈 | 파싱 중 모든 예외를 server로. 409·415 매핑 검사도 추가 |
+| 5 | [중간] 계정을 바꾼 뒤 늦게 끝난 S03 등록이 새 계정 목록에 mine=true로 들어감 | 수용 | 등록 성공이 세션 세대를 보지 않고 목록에 바로 넣음 | 올린 세션의 세대를 함께 알리고, 지금 세션과 다르면 S02가 목록을 다시 읽음. 검사 추가(고치기 전 실패 확인) |
+| 5 | [중간] 형식이 틀린 오류 본문(code가 숫자 등)에서 TypeError가 나 S03·S04가 처리 중으로 멈춤 | 수용 | fromErrorResponse가 code를 String으로 강제 변환 | 타입을 확인해 읽고 상태 코드로 분류. 검사 추가 |
+| 5 | [중간] S03 등록이 401이어도 만료 세션을 유지 | 수용 | sessionExpired를 S03에 적용하지 않음 | S03 401 → 요청 당시 세션이면 로그아웃(입력값 유지). 같은 원리로 상태 바꾸기 401도 로그아웃(403만 막힘·다시 로그인 안내). 검사 추가 |
 
-| 3 | (서버 계약 맞춤 변경) 지적 없음·승인. 제안: 서울 날짜 경계 검사 보강 | 수용 | 자정 직전·정각, 월말·연말, +09:00 오프셋 검사가 없었다 | repository_test.dart에 경계 검사 추가 |
-
-기각·보류: 없음. 1·2회차는 같은 변경(화면 구현)의 리뷰(규칙상 최대 2회), 3회차는 서버 계약에 맞춘 새 변경의 리뷰다.
+기각·보류: 없음. 1·2회차는 화면 구현, 3회차는 camelCase 맞춤, 4·5회차는 명세 맞춤 2단계(HTTP 경로·파싱·오류, 서버 mine)의 리뷰다. 5회차 수정 뒤 추가 리뷰는 받지 않았다(같은 변경 최대 2회, 이후는 사용자 판단).

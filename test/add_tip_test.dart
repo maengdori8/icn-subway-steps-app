@@ -228,13 +228,14 @@ void main() {
 
   testWidgets('로그인이 끝나 올리지 못함: 다시 로그인을 취소하면 안내가 남고, 로그인하면 지워진다(값 유지)', (tester) async {
     final r = repo()..failNext(FakeOperation.createTip, RepositoryErrorCode.unauthorized);
-    await pumpApp(tester, repository: r, session: demoSession);
+    final app = await pumpApp(tester, repository: r, session: demoSession);
     await openAddTip(tester);
     await tester.enterText(field(0), 'Kept title');
     await tester.enterText(field(1), 'Kept place');
     await tapVisible(tester, button('Post tip'));
     const ended = 'Your login has ended. Log in again. What you typed is kept.';
     expect(find.text(ended), findsOneWidget);
+    expect(app.session, isNull, reason: '401이면 만료된 세션을 끝낸다(Codex 5회차 지적 3)');
 
     await tapVisible(tester, find.text('Log in again'));
     await tapVisible(tester, button('Cancel'));
@@ -248,5 +249,33 @@ void main() {
     expect(find.text(ended), findsNothing);
     expect(textField(tester, 0).controller!.text, 'Kept title');
     expect(textField(tester, 1).controller!.text, 'Kept place');
+  });
+
+  testWidgets('로그인을 바꾼 뒤 늦게 끝난 등록은 새 계정의 mine으로 다시 읽는다(Codex 5회차 지적 1)', (tester) async {
+    final r = FakeSubwayRepository(
+      delay: Duration.zero,
+      delayOverrides: {FakeOperation.createTip: const Duration(milliseconds: 1000)},
+    );
+    final traveler = (await tester.runAsync(() => r.login('traveler', 'pw')))!;
+    final app = await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Late tip');
+    await tester.enterText(field(1), 'Somewhere');
+    await tester.ensureVisible(button('Post tip'));
+    await tester.pumpAndSettle();
+    await tester.tap(button('Post tip')); // student01의 등록(1초 걸림)
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.binding.handlePopRoute(); // 올리는 중에 나감
+    await tester.pumpAndSettle();
+    app.signIn(traveler); // 다른 계정으로 바꿈
+    await tester.pumpAndSettle();
+
+    await tester.pump(const Duration(milliseconds: 1000)); // student01의 등록 성공 응답 도착
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Late tip'));
+    expect(find.text('Somewhere · by a traveler'), findsOneWidget);
+    expect(find.text('Somewhere · by you'), findsNothing);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
   });
 }

@@ -100,6 +100,7 @@ class _AddTipScreenState extends State<AddTipScreen> {
       note: note.isEmpty ? null : note,
     );
     final request = app.nextRequestId();
+    final generation = app.sessionGeneration;
     final navigator = Navigator.of(context);
     setState(() {
       _posting = true;
@@ -108,10 +109,12 @@ class _AddTipScreenState extends State<AddTipScreen> {
     });
     try {
       final tip = await app.repository.createTip(draft, session);
-      app.tipPosted(tip);
+      app.tipPosted(tip, generation: generation);
       if (_here && _request == request) navigator.pop(tip); // 화면을 옮긴 뒤 알림을 띄운다
       app.showMessage((s) => s.posted);
     } on RepositoryException catch (e) {
+      // 401: 요청을 보낸 세션이 아직 지금 세션이면 끝낸다(만료 토큰을 다시 쓰지 않게). 입력값은 그대로 둔다.
+      if (e.code == RepositoryErrorCode.unauthorized) app.sessionExpired(generation);
       if (_here && _request == request) {
         setState(() {
           _posting = false;

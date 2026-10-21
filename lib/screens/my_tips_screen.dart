@@ -50,6 +50,7 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
     final session = app.session;
     if (session == null) return;
     final request = ++_request;
+    final generation = app.sessionGeneration;
     try {
       await app.loadRoutes(); // 경로 이름·단계 수('직통열차 · 5단계 중 3단계')
       // 서버는 내 것이면 예시 팁도 주지만, 시안처럼 내 팁 목록에서는 뺀다.
@@ -61,6 +62,11 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
       });
     } on RepositoryException catch (e) {
       if (!mounted || request != _request) return;
+      // 만료·무효 토큰(401)이면 그 세션을 끝낸다. 로그아웃되면 이 화면은 로그인 안내로 바뀐다.
+      if (e.code == RepositoryErrorCode.unauthorized && app.sessionExpired(generation)) {
+        app.showMessage((s) => s.loggedOut);
+        return;
+      }
       setState(() {
         _error = e;
         _phase = _Phase.failed;

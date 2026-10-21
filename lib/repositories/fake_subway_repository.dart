@@ -15,12 +15,14 @@ class FakeSubwayRepository implements SubwayRepository {
   FakeSubwayRepository({
     this.delay = const Duration(milliseconds: 650),
     this.emptyRoutes = false,
+    this.delayOverrides = const {},
     DateTime Function()? now,
   }) : _now = now ?? DateTime.now,
        _tips = Tip.listFromJson(fakeTipsResponse);
 
   final Duration delay; // 로딩 표시를 보기 위한 인위적 지연(600~700ms). 실제 응답 속도가 아니다
   final bool emptyRoutes; // 빈 목록 상태를 보기 위한 설정
+  final Map<FakeOperation, Duration> delayOverrides; // 요청 종류별 지연(응답 순서를 바꿔 보는 검사용)
   final DateTime Function() _now;
   final List<Tip> _tips;
   final Map<FakeOperation, List<RepositoryErrorCode>> _queuedFailures = {};
@@ -35,7 +37,7 @@ class FakeSubwayRepository implements SubwayRepository {
   List<Tip> get allTips => List.unmodifiable(_tips);
 
   Future<void> _wait(FakeOperation operation) async {
-    await Future<void>.delayed(delay);
+    await Future<void>.delayed(delayOverrides[operation] ?? delay);
     final queue = _queuedFailures[operation];
     if (queue != null && queue.isNotEmpty) {
       throw RepositoryException(queue.removeAt(0), 'simulated ${operation.name} failure');

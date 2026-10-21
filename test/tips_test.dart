@@ -154,8 +154,79 @@ void main() {
     app.signIn(demoSession); // 요청이 가는 동안 다시 로그인(새 세션)
     await tester.pump(const Duration(milliseconds: 700));
     await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 700)); // 새 세션으로 팁을 다시 읽는다(mine)
+    await tester.pumpAndSettle();
     expect(app.isTipBlocked(8), isFalse);
     expect(find.text("You can't change this tip right now. Log in again, then try."), findsNothing);
     expect(tester.widget<TextButton>(find.widgetWithText(TextButton, 'Mark as checked')).onPressed, isNotNull);
+  });
+
+  testWidgets("'내가 올림'은 서버 mine: 로그인하면 팁을 다시 읽어 바뀐다", (tester) async {
+    await pumpApp(tester, repository: repo(), prefs: {'progress.LOCAL': 3});
+    await openRoute(tester, 'All-stop Train');
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    expect(find.text('Left end of the gates · by a traveler'), findsOneWidget);
+    expect(find.text('Mark as checked'), findsNothing);
+
+    await tapVisible(tester, find.text('+ Add a tip (log in)'));
+    await tester.enterText(find.byType(TextField).at(0), 'student01');
+    await tester.enterText(find.byType(TextField).at(1), 'pw');
+    await tapVisible(tester, button('Log in'));
+    await tapVisible(tester, button('Cancel')); // S03 → 같은 단계의 S02
+    await tester.ensureVisible(find.text('Left end of the gates · by you'));
+    expect(find.text('Mark as checked'), findsOneWidget);
+  });
+
+  testWidgets('앞 세션의 상태 변경 성공이 새 세션 목록의 mine을 덮지 않는다(Codex 4회차 지적 1)', (tester) async {
+    final r = FakeSubwayRepository(
+      delay: Duration.zero,
+      delayOverrides: {FakeOperation.updateStatus: const Duration(milliseconds: 1000)},
+      now: () => DateTime.utc(2026, 10, 20, 3),
+    );
+    final traveler = (await tester.runAsync(() => r.login('traveler', 'pw')))!;
+    final app = await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
+    await openRoute(tester, 'All-stop Train');
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    await tester.ensureVisible(find.text('Mark as checked'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as checked')); // student01의 요청(1초 걸림)
+    await tester.pump(const Duration(milliseconds: 100));
+
+    app.signIn(traveler); // 그사이 다른 계정으로 로그인 → 팁을 다시 읽음(mine=false)
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pumpAndSettle();
+    expect(find.text('Left end of the gates · by a traveler'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 1000)); // student01의 PATCH 성공 응답 도착
+    await tester.pumpAndSettle();
+    expect(find.text('Left end of the gates · by a traveler'), findsOneWidget);
+    expect(find.text('Mark as out of date'), findsNothing);
+    expect(find.text('Mark as checked'), findsNothing);
+  });
+
+  testWidgets('팁 조회가 401(만료 토큰)이면 로그아웃하고 익명으로 다시 읽는다(Codex 4회차 지적 2)', (tester) async {
+    final r = repo()..failNext(FakeOperation.tips, RepositoryErrorCode.unauthorized);
+    final app = await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
+    await openRoute(tester, 'All-stop Train');
+    expect(app.session, isNull);
+    expect(find.text('Logged out'), findsOneWidget);
+    expect(find.text("Couldn't load tips. The steps above still work."), findsNothing);
+    await tester.pump(const Duration(seconds: 4)); // 하단 알림이 사라진 뒤 누른다
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    expect(find.text('Left end of the gates · by a traveler'), findsOneWidget);
+    expect(find.text('+ Add a tip (log in)'), findsOneWidget);
+  });
+
+  testWidgets('상태 바꾸기가 401(만료 토큰)이면 로그아웃하고 막지 않는다', (tester) async {
+    final r = repo()..failNext(FakeOperation.updateStatus, RepositoryErrorCode.unauthorized);
+    final app = await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
+    await openRoute(tester, 'All-stop Train');
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    await tapVisible(tester, find.text('Mark as checked'));
+    expect(app.session, isNull);
+    expect(app.isTipBlocked(8), isFalse);
+    expect(find.text('Logged out'), findsOneWidget);
+    expect(find.text('Mark as checked'), findsNothing, reason: '로그아웃했으니 버튼 없음');
   });
 }

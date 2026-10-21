@@ -28,6 +28,7 @@ class AppController extends ChangeNotifier {
   // 팁이 새로 올라가면 1씩 는다. S02가 듣고 그 단계의 팁을 다시 읽는다.
   final ValueNotifier<int> tipsRevision = ValueNotifier<int>(0);
   Tip? lastPostedTip;
+  int? lastPostedGeneration; // 그 팁을 올린 세션의 세대. 지금 세션과 다르면 화면은 목록을 다시 읽는다(mine)
 
   late ThemeMode _themeMode;
   late AppLanguage _language;
@@ -92,6 +93,14 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 서버가 401(무효·만료 토큰)을 돌려줬을 때. 요청을 보낸 세션이 아직 지금 세션일 때만 로그아웃한다
+  // (그사이 다시 로그인했으면 새 세션은 그대로 둔다). 로그아웃하면 화면들이 익명으로 다시 읽는다.
+  bool sessionExpired(int generation) {
+    if (generation != _sessionGeneration || _session == null) return false;
+    signOut();
+    return true;
+  }
+
   void signOut() {
     _session = null;
     _sessionGeneration++;
@@ -123,8 +132,9 @@ class AppController extends ChangeNotifier {
     return steps;
   }
 
-  void tipPosted(Tip tip) {
+  void tipPosted(Tip tip, {required int generation}) {
     lastPostedTip = tip;
+    lastPostedGeneration = generation;
     tipsRevision.value++;
   }
 

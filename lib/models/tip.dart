@@ -8,6 +8,9 @@ enum TipStatus {
 
   TipStatus get toggled => this == verified ? outdated : verified;
 
+  // PATCH /api/tips/{id}/status 본문(TipStatusRequest). status 외 항목은 보내지 않는다.
+  Map<String, dynamic> toRequestJson() => {'status': json};
+
   static TipStatus fromJson(String value) => TipStatus.values.firstWhere((s) => s.json == value);
 }
 

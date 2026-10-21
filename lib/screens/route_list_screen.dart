@@ -251,15 +251,15 @@ class _RouteCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(_subline(route, s, lang), style: TextStyle(fontSize: 14, color: c.textSecondary)),
-                            // 표지판 병기: 서버가 따로 주지 않아 경로 이름(ko·en)으로 만든다(시안 .signline).
-                            if (route.available)
+                            // 표지판 병기: 서버가 주지 않아 앱의 경로별 상수(routeDisplays)로 보인다(시안 .signline).
+                            if (route.signKo != null && route.signEn != null)
                               Text.rich(
                                 TextSpan(
                                   style: small,
                                   children: [
-                                    TextSpan(text: route.name.ko, locale: AppLanguage.ko.locale),
+                                    TextSpan(text: route.signKo, locale: AppLanguage.ko.locale),
                                     const TextSpan(text: ' · '),
-                                    TextSpan(text: route.name.en, locale: AppLanguage.en.locale),
+                                    TextSpan(text: route.signEn, locale: AppLanguage.en.locale),
                                     const TextSpan(text: ' · '),
                                     TextSpan(text: s.airportRailroadKo, locale: AppLanguage.ko.locale),
                                     const TextSpan(text: ' '),
