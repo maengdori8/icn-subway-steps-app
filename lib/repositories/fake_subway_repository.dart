@@ -2,12 +2,13 @@ import '../models/guide_step.dart';
 import '../models/route_info.dart';
 import '../models/tip.dart';
 import '../models/user_session.dart';
+import '../validation/signup_rules.dart';
 import '../validation/tip_rules.dart';
 import 'fake_seed.dart';
 import 'subway_repository.dart';
 
 // 실패를 흉내 낼 요청 종류.
-enum FakeOperation { routes, steps, tips, myTips, createTip, updateStatus, login }
+enum FakeOperation { routes, steps, tips, myTips, createTip, updateStatus, login, signup }
 
 // 서버 없이 화면을 만들기 위한 메모리 저장소. 앱을 다시 시작하면 fake_seed.dart의 처음 자료로 돌아간다.
 // 실제 저장·인증이 아니다. 로그인은 아이디 'wrong'만 실패하고 비밀번호는 비어 있지만 않으면 받는다(시안과 같음).
@@ -25,23 +26,27 @@ class FakeSubwayRepository implements SubwayRepository {
   final Map<FakeOperation, Duration> delayOverrides; // 요청 종류별 지연(응답 순서를 바꿔 보는 검사용)
   final DateTime Function() _now;
   final List<Tip> _tips;
-  final Map<FakeOperation, List<RepositoryErrorCode>> _queuedFailures = {};
+  final Map<FakeOperation, List<RepositoryException>> _queuedFailures = {};
   final Map<String, int> _userIds = {fakeDemoUsername: fakeDemoUserId, 'student02': fakeSampleOwnerId};
   int _nextTipId = 9; // 서버 시드(7·8번) 다음 번호
 
   // 다음 [times]번의 [operation] 요청을 [code]로 실패시킨다. 위젯 검사와 상태 확인용이다.
-  void failNext(FakeOperation operation, RepositoryErrorCode code, {int times = 1}) {
-    _queuedFailures.putIfAbsent(operation, () => []).addAll(List.filled(times, code));
+  // [fieldErrors]는 서버 400 errors의 키(title·location·note·route·stepNo)처럼 거절한 칸 이름을 함께 준다.
+  void failNext(FakeOperation operation, RepositoryErrorCode code, {int times = 1, Set<String> fieldErrors = const {}}) {
+    final failure = RepositoryException(code, 'simulated ${operation.name} failure', fieldErrors);
+    _queuedFailures.putIfAbsent(operation, () => []).addAll(List.filled(times, failure));
   }
 
   List<Tip> get allTips => List.unmodifiable(_tips);
 
+  // 받은 요청 종류를 차례로 남긴다(검사에서 등록·상태 변경 뒤 서버를 다시 읽었는지 본다).
+  final List<FakeOperation> requests = [];
+
   Future<void> _wait(FakeOperation operation) async {
+    requests.add(operation);
     await Future<void>.delayed(delayOverrides[operation] ?? delay);
     final queue = _queuedFailures[operation];
-    if (queue != null && queue.isNotEmpty) {
-      throw RepositoryException(queue.removeAt(0), 'simulated ${operation.name} failure');
-    }
+    if (queue != null && queue.isNotEmpty) throw queue.removeAt(0);
   }
 
   DateTime _nowUtc() => _now().toUtc();
@@ -149,5 +154,23 @@ class FakeSubwayRepository implements SubwayRepository {
       'expiresIn': 1800,
       'user': {'id': id, 'username': name},
     });
+  }
+
+  // 서버처럼 가입 규칙을 검사하고, 이미 있는 아이디는 409 USERNAME_TAKEN으로 거절한다.
+  // 비밀번호는 저장하지 않는다(가짜 로그인은 비밀번호를 비교하지 않음).
+  @override
+  Future<void> signup(String username, String password) async {
+    await _wait(FakeOperation.signup);
+    final errors = validateSignup(username: username, password: password, confirm: password);
+    if (!errors.isEmpty) {
+      throw RepositoryException(RepositoryErrorCode.validation, 'signup validation', {
+        if (errors.username != null) 'username',
+        if (errors.password != null) 'password',
+      }, 'VALIDATION_FAILED');
+    }
+    if (_userIds.containsKey(username)) {
+      throw const RepositoryException(RepositoryErrorCode.validation, 'username taken', {'username'}, 'USERNAME_TAKEN');
+    }
+    _userIds[username] = fakeDemoUserId + _userIds.length;
   }
 }

@@ -60,20 +60,25 @@ class Tip {
     example: example,
   );
 
-  factory Tip.fromJson(Map<String, dynamic> json) => Tip(
-    id: json['id'] as int,
-    route: json['route'] as String,
-    stepNo: json['stepNo'] as int,
-    title: json['title'] as String,
-    location: json['location'] as String,
-    note: json['note'] as String?,
-    status: TipStatus.fromJson(json['status'] as String),
-    verifiedAt: DateTime.parse(json['verifiedAt'] as String).toUtc(),
-    createdAt: DateTime.parse(json['createdAt'] as String).toUtc(),
-    ownerId: json['ownerId'] as int,
-    mine: json['mine'] as bool? ?? false,
-    example: json['example'] as bool? ?? false,
-  );
+  // 명세(Tip 스키마)의 필수 항목이 빠지면 그럴듯한 기본값으로 채우지 않고 계약 오류로 본다(10장 P02).
+  // note는 값이 null일 수 있지만 키는 있어야 한다.
+  factory Tip.fromJson(Map<String, dynamic> json) {
+    if (!json.containsKey('note')) throw const FormatException('Tip.note is missing');
+    return Tip(
+      id: json['id'] as int,
+      route: json['route'] as String,
+      stepNo: json['stepNo'] as int,
+      title: json['title'] as String,
+      location: json['location'] as String,
+      note: json['note'] as String?,
+      status: TipStatus.fromJson(json['status'] as String),
+      verifiedAt: DateTime.parse(json['verifiedAt'] as String).toUtc(),
+      createdAt: DateTime.parse(json['createdAt'] as String).toUtc(),
+      ownerId: json['ownerId'] as int,
+      mine: json['mine'] as bool,
+      example: json['example'] as bool,
+    );
+  }
 
   // 응답 봉투 {"tips": [...]}를 읽는다(GET /api/tips, GET /api/me/tips).
   static List<Tip> listFromJson(Map<String, dynamic> json) => [

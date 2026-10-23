@@ -7,6 +7,7 @@ import '../models/guide_step.dart';
 import '../models/route_info.dart';
 import '../models/tip.dart';
 import '../models/user_session.dart';
+import '../repositories/fake_subway_repository.dart';
 import '../repositories/subway_repository.dart';
 
 // 앱 전체가 함께 쓰는 상태: 테마·언어·경로별 진행(기기에 기억), 로그인(앱을 끄면 사라짐),
@@ -23,6 +24,9 @@ class AppController extends ChangeNotifier {
 
   final SubwayRepository repository;
   final SharedPreferences _prefs;
+
+  // 서버 없이 가짜 저장소로 실행 중인지(FAKE_SCENARIO·검사). S05 버전 문구에 '시연용 데이터'를 붙인다(P01 결정 6).
+  bool get demoData => repository is FakeSubwayRepository;
   final GlobalKey<ScaffoldMessengerState> messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   // 팁이 새로 올라가면 1씩 는다. S02가 듣고 그 단계의 팁을 다시 읽는다.

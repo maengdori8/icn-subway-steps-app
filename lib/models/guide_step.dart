@@ -20,8 +20,8 @@ enum StepIcon {
   const StepIcon(this.json);
   final String json;
 
-  static StepIcon fromJson(String value) =>
-      StepIcon.values.firstWhere((i) => i.json == value, orElse: () => StepIcon.train);
+  // 명세 enum(PLANE·ESCALATOR·TRAIN) 밖의 값은 다른 그림으로 대신하지 않고 계약 오류로 본다(10장 P02).
+  static StepIcon fromJson(String value) => StepIcon.values.firstWhere((i) => i.json == value);
 }
 
 // S02 단계 한 장. 서버 GET /api/routes/{route}/steps → {"route": "EXPRESS", "steps": [Step…]}.
@@ -49,7 +49,11 @@ class GuideStep {
   final String? photoKey; // 앱에 들어 있는 사진 키(models/step_photos.dart). null이면 '사진 준비 중'
   final LocalizedText? elevator; // 엘리베이터 위치. null이면 '엘리베이터: 현장 확인 중'
 
+  // photoKey·elevator는 null일 수 있지만 키는 명세(Step 스키마)의 필수 항목이다. 빠지면 계약 오류로 본다.
   factory GuideStep.fromJson(Map<String, dynamic> json) {
+    if (!json.containsKey('photoKey') || !json.containsKey('elevator')) {
+      throw const FormatException('Step.photoKey or Step.elevator is missing');
+    }
     final sign = json['sign'] as Map<String, dynamic>;
     final elevator = json['elevator'] as Map<String, dynamic>?;
     return GuideStep(

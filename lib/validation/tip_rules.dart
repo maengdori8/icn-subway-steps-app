@@ -7,7 +7,8 @@ const int tipNoteMax = 150;
 int codePointLength(String value) => value.runes.length;
 
 // 칸 아래에 보일 오류. 문구가 아니라 종류를 저장해 언어를 바꿔도 그 언어로 다시 그린다.
-enum TipFieldError { required, tooLong80, tooLong150 }
+// rejected: 서버 400이 그 칸을 거절했지만 앱 규칙으로는 맞는 종류가 없을 때(일반 문구, P01 결정 4).
+enum TipFieldError { required, tooLong80, tooLong150, rejected }
 
 class TipFormErrors {
   const TipFormErrors({this.title, this.location, this.note});

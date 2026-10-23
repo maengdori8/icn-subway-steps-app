@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:icn_subway_app/models/tip.dart';
+import 'package:icn_subway_app/models/user_session.dart';
 import 'package:icn_subway_app/repositories/fake_subway_repository.dart';
 import 'package:icn_subway_app/repositories/subway_repository.dart';
 
@@ -47,8 +49,9 @@ void main() {
     expect(find.text('No tips for this step yet.'), findsOneWidget);
   });
 
-  testWidgets('내 팁 상태 바꾸기: 지난 팁 펼치기 → 저장 중 → 배지만 바뀜', (tester) async {
-    await pumpApp(tester, repository: repo(ms: 600), prefs: {'progress.LOCAL': 3}, session: demoSession);
+  testWidgets('내 팁 상태 바꾸기: 지난 팁 펼치기 → 저장 중 → 배지만 바뀜 → 서버에서 다시 읽음', (tester) async {
+    final r = repo(ms: 600);
+    await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
     await tester.pump(const Duration(milliseconds: 700));
     await tester.tap(find.text('All-stop Train'));
     await tester.pumpAndSettle();
@@ -71,6 +74,55 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Checked by author · 2026-10-20'), findsOneWidget);
     expect(find.text('Mark as out of date'), findsOneWidget);
+    // 10장: 성공 응답을 넣은 뒤 그 단계의 팁을 서버에서 다시 읽는다. 다시 읽는 동안 목록은 그대로이고, 다시 읽은 값도 같다.
+    expect(r.requests.last, FakeOperation.tips);
+    expect(find.text('Loading tips…'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pumpAndSettle();
+    expect(find.text('Checked by author · 2026-10-20'), findsOneWidget);
+  });
+
+  testWidgets('상태 변경 뒤 다시 읽기가 실패해도 받은 응답으로 그린 목록은 그대로(못 불러옴 안내 없음)', (tester) async {
+    final r = repo();
+    await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
+    await openRoute(tester, 'All-stop Train');
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    r.failNext(FakeOperation.tips, RepositoryErrorCode.server);
+    await tapVisible(tester, find.text('Mark as checked'));
+    expect(r.requests.last, FakeOperation.tips);
+    expect(find.text('Elevator for big suitcases'), findsOneWidget);
+    expect(find.text('Checked by author · 2026-10-20'), findsOneWidget);
+    expect(find.text("Couldn't load tips. The steps above still work."), findsNothing);
+  });
+
+  testWidgets('조용한 재조회 중에 로그인이 바뀌면 앞 세션의 응답을 넣지 않는다(Codex 10장 1회차 지적 4)', (tester) async {
+    final r = FakeSubwayRepository(
+      delay: Duration.zero,
+      delayOverrides: {FakeOperation.tips: const Duration(milliseconds: 300)},
+      now: () => DateTime.utc(2026, 10, 20, 3),
+    );
+    final app = await pumpApp(tester, repository: r, prefs: {'progress.LOCAL': 3}, session: demoSession);
+    await openRoute(tester, 'All-stop Train');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+    // 화면 밖에서 A의 새 팁이 서버에 생겼다. A 세션의 재조회 응답에만 들어 있다.
+    await tester.runAsync(
+      () => r.createTip(const TipDraft(route: 'LOCAL', stepNo: 4, title: 'Fresh tip from A', location: 'Gate 2'), demoSession),
+    );
+    await tapVisible(tester, find.text('Show 1 older tip'));
+    await tester.ensureVisible(find.text('Mark as checked'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark as checked'));
+    await tester.pump(const Duration(milliseconds: 10)); // 상태 변경 응답 → 조용한 재조회 시작(300ms)
+    expect(r.requests.last, FakeOperation.tips);
+    await tester.pump(const Duration(milliseconds: 250));
+    app.signIn(const UserSession(userId: 102, username: 'student02', accessToken: 'fake-session-102'));
+    await tester.pump(const Duration(milliseconds: 100)); // A 세션의 재조회 응답이 도착
+    expect(find.text('Fresh tip from A'), findsNothing, reason: 'A 세션 기준 응답(mine)은 버림');
+    await tester.pump(const Duration(milliseconds: 400)); // B 세션으로 다시 읽음
+    await tester.pumpAndSettle();
+    expect(find.text('Fresh tip from A'), findsOneWidget);
+    expect(find.textContaining('by you'), findsNothing, reason: 'B에게는 내 팁이 아님');
   });
 
   testWidgets('못 바꿈 → 그 팁 아래 알림과 다시 시도, 단계를 옮기면 알림이 사라진다', (tester) async {
@@ -98,7 +150,7 @@ void main() {
     await openRoute(tester, 'All-stop Train');
     await tapVisible(tester, find.text('Show 1 older tip'));
     await tapVisible(tester, find.text('Mark as checked'));
-    const forbidden = "You can't change this tip right now. Log in again, then try.";
+    const forbidden = 'Only the person who posted this tip can change it. If you logged in with another account, log in again.';
     expect(find.text(forbidden), findsOneWidget);
     expect(tester.widget<TextButton>(find.widgetWithText(TextButton, 'Mark as checked')).onPressed, isNull);
 
@@ -123,7 +175,7 @@ void main() {
     await tester.enterText(find.byType(TextField).at(1), 'pw');
     await tester.tap(button('Log in'));
     await tester.pumpAndSettle();
-    expect(find.text("You can't change this tip right now. Log in again, then try."), findsNothing);
+    expect(find.text('Only the person who posted this tip can change it. If you logged in with another account, log in again.'), findsNothing);
     expect(tester.widget<TextButton>(find.widgetWithText(TextButton, 'Mark as checked')).onPressed, isNotNull);
   });
 
@@ -157,7 +209,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 700)); // 새 세션으로 팁을 다시 읽는다(mine)
     await tester.pumpAndSettle();
     expect(app.isTipBlocked(8), isFalse);
-    expect(find.text("You can't change this tip right now. Log in again, then try."), findsNothing);
+    expect(find.text('Only the person who posted this tip can change it. If you logged in with another account, log in again.'), findsNothing);
     expect(tester.widget<TextButton>(find.widgetWithText(TextButton, 'Mark as checked')).onPressed, isNotNull);
   });
 

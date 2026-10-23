@@ -14,7 +14,7 @@ import '../widgets/labeled_field.dart';
 import '../widgets/step_widgets.dart';
 import 'login_screen.dart';
 
-enum _Failure { postFailed, sessionEnded }
+enum _Failure { postFailed, sessionEnded, unknownResult }
 
 // S03 팁 등록. 들어온 경로·단계가 함께 넘어온다(화면에서 고르지 않음).
 // - 제목·위치는 앞뒤 공백을 뺀 뒤 1~80자, 메모는 선택 150자 이하(코드 포인트 기준). 칸 아래에 오류.
@@ -47,6 +47,8 @@ class _AddTipScreenState extends State<AddTipScreen> {
 
   bool get _here => mounted && !_left;
   _Failure? _failure;
+  TipDraft? _sentDraft; // 마지막으로 보낸 등록. 시간 초과 뒤 [팁 목록 확인]이 이 값과 같은 팁을 찾는다
+  int? _sentUserId; // 그 등록을 보낸 사용자. 확인은 지금 로그인과 관계없이 ownerId로 맞춘다
 
   bool get _dirty => _title.text.trim().isNotEmpty || _location.text.trim().isNotEmpty || _note.text.trim().isNotEmpty;
 
@@ -65,23 +67,47 @@ class _AddTipScreenState extends State<AddTipScreen> {
     TipFieldError.required => s.errRequired,
     TipFieldError.tooLong80 => s.errLong80,
     TipFieldError.tooLong150 => s.errLong150,
+    TipFieldError.rejected => s.errCheckField,
     null => null,
   };
 
+  static const _tipFields = {'title', 'location', 'note'};
+
+  // 서버 400 errors의 칸 이름(title·location·note)을 칸 오류로 바꾼다(P01 결정 4). 서버 문구는 한국어뿐이라 쓰지 않고,
+  // 앱 규칙을 다시 돌려 맞는 종류가 있으면 그 문구, 없으면 일반 문구('이 칸을 다시 확인하세요')를 보인다.
+  TipFormErrors _serverFieldErrors(Set<String> fields) {
+    final rules = validateTip(title: _title.text, location: _location.text, note: _note.text);
+    TipFieldError? pick(String field, TipFieldError? rule) =>
+        fields.contains(field) ? (rule ?? TipFieldError.rejected) : null;
+    return TipFormErrors(
+      title: pick('title', rules.title),
+      location: pick('location', rules.location),
+      note: pick('note', rules.note),
+    );
+  }
+
+  // 첫 오류 칸(제목 → 위치 → 메모)에 초점을 준다.
+  void _focusFirstError(TipFormErrors errors) {
+    if (errors.isEmpty) return;
+    (errors.title != null
+            ? _titleFocus
+            : errors.location != null
+            ? _locationFocus
+            : _noteFocus)
+        .requestFocus();
+  }
+
   Future<void> _submit() async {
     if (_posting) return;
+    // 시간 초과로 결과를 모르면 다시 보내기 전에 목록부터 확인한다(하단 버튼도 같은 길, Codex 10장 2회차 지적 1).
+    if (_failure == _Failure.unknownResult) return _checkPosted();
     final errors = validateTip(title: _title.text, location: _location.text, note: _note.text);
     if (!errors.isEmpty) {
       setState(() {
         _errors = errors;
         _failure = null;
       });
-      (errors.title != null
-              ? _titleFocus
-              : errors.location != null
-              ? _locationFocus
-              : _noteFocus)
-          .requestFocus();
+      _focusFirstError(errors);
       return;
     }
     final app = AppScope.read(context);
@@ -116,14 +142,73 @@ class _AddTipScreenState extends State<AddTipScreen> {
       // 401: 요청을 보낸 세션이 아직 지금 세션이면 끝낸다(만료 토큰을 다시 쓰지 않게). 입력값은 그대로 둔다.
       if (e.code == RepositoryErrorCode.unauthorized) app.sessionExpired(generation);
       if (_here && _request == request) {
+        final fieldErrors = e.code == RepositoryErrorCode.validation
+            ? _serverFieldErrors(e.fieldErrors)
+            : const TipFormErrors();
         setState(() {
           _posting = false;
           _request = null;
-          _failure = e.code == RepositoryErrorCode.unauthorized ? _Failure.sessionEnded : _Failure.postFailed;
+          _sentDraft = draft;
+          _sentUserId = session.userId;
+          _errors = fieldErrors;
+          _failure = switch (e.code) {
+            RepositoryErrorCode.unauthorized => _Failure.sessionEnded,
+            // 응답 없음: 서버에 저장됐을 수 있어 바로 다시 보내지 않고 목록부터 확인하게 한다(교재 10장 2.5·Q04).
+            RepositoryErrorCode.timeout => _Failure.unknownResult,
+            // 400이 입력칸 이름만 주면 칸 아래 오류로 알린다. 칸이 아닌 이름(route·stepNo 등)이 있거나 이름이 없으면 상자.
+            RepositoryErrorCode.validation when !fieldErrors.isEmpty && e.fieldErrors.every(_tipFields.contains) => null,
+            _ => _Failure.postFailed,
+          };
         });
+        _focusFirstError(fieldErrors);
       } else {
         app.showMessage((s) => s.postErrorClosed); // 이미 화면을 떠났다. 입력값은 남아 있지 않다
       }
+    }
+  }
+
+  // 시간 초과 뒤 [팁 목록 확인]: 그 단계의 팁을 서버에서 읽어, 보낸 값과 같은 팁(보낸 사용자·제목·위치·메모)이 있으면
+  // 닫는다. 없으면 그때 다시 올리기를 보인다(같은 등록을 확인 없이 두 번 보내 중복을 만들지 않게).
+  // 공개 GET이라 그사이 로그인이 바뀌거나 끝나도 확인할 수 있다(Codex 10장 2회차 지적 3).
+  Future<void> _checkPosted() async {
+    final app = AppScope.read(context);
+    final draft = _sentDraft;
+    final ownerId = _sentUserId;
+    if (draft == null || ownerId == null || _posting) return;
+    final request = app.nextRequestId();
+    final generation = app.sessionGeneration;
+    final navigator = Navigator.of(context);
+    setState(() {
+      _posting = true;
+      _request = request;
+    });
+    try {
+      final tips = await app.repository.fetchTips(draft.route, draft.stepNo, session: app.session);
+      if (!_here || _request != request) return;
+      final same = tips.where(
+        (t) => t.ownerId == ownerId && t.title == draft.title && t.location == draft.location && t.note == draft.note,
+      );
+      if (same.isNotEmpty) {
+        // 이번 요청이 저장한 것인지 앞서 올린 같은 팁인지는 구별할 수 없어 '같은 팁이 있다'고만 알린다(지적 2).
+        app.tipPosted(same.first, generation: generation);
+        navigator.pop(same.first);
+        app.showMessage((s) => s.postFound);
+        return;
+      }
+      setState(() {
+        _posting = false;
+        _request = null;
+        _failure = _Failure.postFailed;
+      });
+    } on RepositoryException catch (e) {
+      // 401(만료 토큰)이면 그 세션을 끝낸다. 결과는 여전히 모르므로 확인 안내를 남긴다(다시 누르면 토큰 없이 읽는다).
+      if (e.code == RepositoryErrorCode.unauthorized) app.sessionExpired(generation);
+      if (!_here || _request != request) return;
+      setState(() {
+        _posting = false;
+        _request = null;
+        _failure = _Failure.unknownResult;
+      });
     }
   }
 
@@ -225,14 +310,26 @@ class _AddTipScreenState extends State<AddTipScreen> {
             ),
             const Gap(AppSpace.section),
             if (_failure != null) ...[
-              _failure == _Failure.sessionEnded
-                  ? NoticeBox(
-                      kind: NoticeKind.error,
-                      message: s.sessionEnded,
-                      actionLabel: s.loginAgain,
-                      onAction: _logInAgain,
-                    )
-                  : NoticeBox(kind: NoticeKind.error, message: s.postError, actionLabel: s.retry, onAction: _submit),
+              switch (_failure!) {
+                _Failure.sessionEnded => NoticeBox(
+                  kind: NoticeKind.error,
+                  message: s.sessionEnded,
+                  actionLabel: s.loginAgain,
+                  onAction: _logInAgain,
+                ),
+                _Failure.unknownResult => NoticeBox(
+                  kind: NoticeKind.warning,
+                  message: s.postUnknown,
+                  actionLabel: s.checkTips,
+                  onAction: _checkPosted,
+                ),
+                _Failure.postFailed => NoticeBox(
+                  kind: NoticeKind.error,
+                  message: s.postError,
+                  actionLabel: s.retry,
+                  onAction: _submit,
+                ),
+              },
               const Gap(AppSpace.section),
             ],
             LabeledField(

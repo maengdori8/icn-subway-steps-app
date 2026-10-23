@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../l10n/app_language.dart';
@@ -7,6 +9,15 @@ import '../models/step_photos.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import 'mixed_text.dart';
+
+// 큰 글자 판정은 본문(16) 기준 배율로 한다(S02 명세). Android 글꼴 200%는 비선형이라 본문이 약 1.75배가 된다.
+double bodyTextScale(TextScaler scaler) => scaler.scale(16) / 16;
+
+// 1.3배 이상이면 '전체 단계' 버튼을 막대 아래 줄로 내린다(한 줄에 넣으면 넘침).
+bool stepsButtonOnOwnLine(TextScaler scaler) => bodyTextScale(scaler) >= 1.3;
+
+// 1.7배 이상이면 이전·다음을 하단 고정 대신 본문 끝에 둔다(고정 바가 본문을 가리지 않게).
+bool stepNavInline(TextScaler scaler) => bodyTextScale(scaler) >= 1.7;
 
 // 진행 표시: 큰 숫자 '현재/전체'와 단계 수만큼의 막대. 숫자는 낭독에서 빼고 단계 제목이 'Step n of N'을 읽는다.
 class StepProgress extends StatelessWidget {
@@ -69,8 +80,7 @@ class StepProgress extends StatelessWidget {
     );
     final head = [ExcludeSemantics(child: number), const SizedBox(width: 12), Expanded(child: bars)];
     if (trailing == null) return Row(children: head);
-    // 글자를 1.3배 이상 키우면 '전체 단계' 버튼을 막대 아래 줄로 내린다(한 줄에 넣으면 넘침).
-    if (MediaQuery.textScalerOf(context).scale(10) / 10 >= 1.3) {
+    if (stepsButtonOnOwnLine(MediaQuery.textScalerOf(context))) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -183,6 +193,57 @@ class StepPhoto extends StatelessWidget {
     // 사진은 두 테마에서 같은 원본을 쓰고 밝기를 바꾸지 않는다. 대체 문구는 지금 언어의 표지판 이름 하나로.
     final alt = language == AppLanguage.ko ? step.signKo : step.signEn;
     return Image.asset(photo.asset, fit: BoxFit.cover, semanticLabel: alt);
+  }
+}
+
+// 사진 넘김을 인스타그램 스토리처럼(2026-10-22 사용자 요청): 넘기는 동안 두 사진이 정육면체의 이웃한 면처럼
+// 맞닿은 모서리를 축으로 돈다. 나가는 사진은 다음 사진 쪽 모서리, 들어오는 사진은 앞 사진 쪽 모서리를 축으로 최대 90° 돌고,
+// 돌아 멀어질수록 조금 어두워진다. 손가락으로 밀 때와 이전·다음 버튼으로 넘길 때 모두 같다.
+// 동작 줄이기 설정이면 돌리지 않고 지금처럼 평평하게 넘긴다.
+class CubePage extends StatelessWidget {
+  const CubePage({super.key, required this.controller, required this.index, required this.child});
+
+  final PageController controller;
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.of(context).disableAnimations) return child;
+    return AnimatedBuilder(
+      animation: controller,
+      child: child,
+      builder: (context, child) {
+        // 전체 단계 목록을 접을 때처럼 한 프레임 동안 PageView가 새로 만들어져 같은 컨트롤러에 두 번 붙을 수 있다.
+        // 그때 controller.position·page를 부르면 오류가 나므로 하나만 붙어 있을 때만 읽고, 아니면 제자리로 본다.
+        final positions = controller.hasClients ? controller.positions.toList() : const <ScrollPosition>[];
+        final page = positions.length == 1 && positions.single.haveDimensions
+            ? controller.page ?? index.toDouble()
+            : index.toDouble();
+        // > 0: 이 사진이 왼쪽으로 나가는 중, < 0: 오른쪽에서 들어오는 중. 0이면 제자리(돌리지 않음).
+        final offset = (page - index).clamp(-1.0, 1.0);
+        return Transform(
+          key: ValueKey('cube-$index'),
+          alignment: offset > 0 ? Alignment.centerRight : Alignment.centerLeft,
+          transform: offset == 0
+              ? Matrix4.identity()
+              : (Matrix4.identity()
+                  ..setEntry(3, 2, 0.001) // 원근
+                  ..rotateY(offset * math.pi / 2)),
+          child: Stack(
+            fit: StackFit.passthrough,
+            children: [
+              child!,
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: ColoredBox(color: Colors.black.withValues(alpha: 0.35 * offset.abs())),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
 

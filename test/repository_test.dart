@@ -138,11 +138,16 @@ void main() {
       await expectLater(r.fetchSteps('NOPE'), throwsA(isA<RepositoryException>()));
     });
 
-    test('단계는 stepNo 1부터, 사진 없는 단계는 photoKey가 null', () async {
+    test('단계는 stepNo 1부터, 두 경로 모두 다섯 단계에 앱 사진 키가 있다', () async {
       final steps = await repo().fetchSteps('EXPRESS');
       expect(steps.map((s) => s.stepNo), [1, 2, 3, 4, 5]);
-      expect(steps.map((s) => s.photoKey == null), [false, true, false, true, true]);
+      // 2026-10-22: 2단계(교통센터), 일반열차 4단계(개찰구), 직통열차 4·5단계(개찰구·승강장) 사진을 채웠다.
+      expect(steps.map((s) => s.photoKey), ['arrivals', 'transportCenter', 'expressConcourse', 'expressGate', 'expressPlatform']);
+      expect(steps.every((s) => stepPhotoFor(s.photoKey) != null), isTrue);
       expect(steps.first.signEn, 'Terminal 1 Arrivals');
+      final local = await repo().fetchSteps('LOCAL');
+      expect(local.map((s) => s.photoKey), ['arrivals', 'transportCenter', 'localConcourse', 'localGate', 'localPlatform']);
+      expect(local.every((s) => stepPhotoFor(s.photoKey) != null), isTrue);
     });
 
     test('팁 올리기: 앞뒤 공백 제거, 빈 메모는 null, VERIFIED, 올린 사람은 로그인 사용자, 새 팁이 먼저', () async {

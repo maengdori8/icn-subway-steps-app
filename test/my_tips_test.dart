@@ -59,6 +59,18 @@ void main() {
     expect(find.text('Mark as out of date'), findsOneWidget);
   });
 
+  testWidgets('내 팁에서 상태를 바꾸면 내 팁 목록을 서버에서 다시 읽는다(10장)', (tester) async {
+    final r = FakeSubwayRepository(delay: Duration.zero);
+    await pumpApp(tester, repository: r, session: demoSession);
+    await openMyTips(tester);
+    await tester.tap(find.text('Mark as checked'));
+    await tester.pumpAndSettle();
+    final changed = r.requests.lastIndexOf(FakeOperation.updateStatus);
+    expect(changed, isNonNegative);
+    expect(r.requests.sublist(changed + 1), contains(FakeOperation.myTips));
+    expect(find.textContaining('Checked by author ·'), findsOneWidget);
+  });
+
   testWidgets('로그아웃하면 다시 로그인 안내로', (tester) async {
     final app = await pumpApp(tester, session: demoSession);
     await openMyTips(tester);
@@ -75,7 +87,7 @@ void main() {
     await openMyTips(tester);
     await tester.tap(find.text('Mark as checked'));
     await tester.pumpAndSettle();
-    const forbidden = "You can't change this tip right now. Log in again, then try.";
+    const forbidden = 'Only the person who posted this tip can change it. If you logged in with another account, log in again.';
     expect(find.text(forbidden), findsOneWidget);
 
     await tester.tap(find.text('Routes'));

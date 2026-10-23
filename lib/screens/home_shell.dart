@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/route_info.dart';
 import '../state/app_controller.dart';
 import '../widgets/common.dart';
+import '../widgets/floating_tab_bar.dart';
 import 'my_tips_screen.dart';
 import 'route_list_screen.dart';
 import 'settings_screen.dart';
@@ -23,9 +24,28 @@ class _HomeShellState extends State<HomeShell> {
   HomeTab _tab = HomeTab.routes;
 
   void _select(HomeTab tab) {
-    if (tab == _tab) return;
+    if (tab == _tab) {
+      _scrollToTop(); // 지금 탭을 다시 누르면 그 화면을 맨 위로(DS·CR 하단 메뉴 sameTab 규칙)
+      return;
+    }
     AppScope.read(context).hideMessage();
     setState(() => _tab = tab);
+  }
+
+  // 탭 화면(S01·S06·S05)의 본문 스크롤은 컨트롤러를 따로 주지 않아 이 경로의 PrimaryScrollController에 붙는다
+  // (세로 스크롤 기본값, Android). 움직임은 S02 단계 이동과 같은 250ms easeOut, 동작 줄이기 설정이면 바로 옮긴다.
+  void _scrollToTop() {
+    final scroll = PrimaryScrollController.maybeOf(context);
+    if (scroll == null) return;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    for (final position in List.of(scroll.positions)) {
+      if (position.pixels == 0) continue;
+      if (reduceMotion) {
+        position.jumpTo(0);
+      } else {
+        position.animateTo(0, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+      }
+    }
   }
 
   // S06 '이 단계 보기': 경로 탭으로 바꾼 뒤 S02를 연다. S02에서 뒤로 가면 S01(흐름표).
@@ -66,25 +86,14 @@ class _HomeShellState extends State<HomeShell> {
           HomeTab.myTips => MyTipsScreen(onOpenStep: _openStep),
           HomeTab.settings => const SettingsScreen(),
         },
-        bottomNavigationBar: NavigationBar(
+        // 떠 있는 둥근 캡슐 하단 메뉴(아이콘 + 작은 글자, 2026-10-22 사용자 요청).
+        bottomNavigationBar: FloatingTabBar(
           selectedIndex: _tab.index,
-          onDestinationSelected: (i) => _select(HomeTab.values[i]),
-          destinations: [
-            NavigationDestination(
-              icon: const Icon(Icons.signpost_outlined),
-              selectedIcon: const Icon(Icons.signpost),
-              label: s.tabRoutes,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.lightbulb_outline),
-              selectedIcon: const Icon(Icons.lightbulb),
-              label: s.tabMyTips,
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.settings_outlined),
-              selectedIcon: const Icon(Icons.settings),
-              label: s.tabSettings,
-            ),
+          onSelected: (i) => _select(HomeTab.values[i]),
+          tabs: [
+            FloatingTab(icon: Icons.signpost_outlined, selectedIcon: Icons.signpost, label: s.tabRoutes),
+            FloatingTab(icon: Icons.lightbulb_outline, selectedIcon: Icons.lightbulb, label: s.tabMyTips),
+            FloatingTab(icon: Icons.settings_outlined, selectedIcon: Icons.settings, label: s.tabSettings),
           ],
         ),
       ),

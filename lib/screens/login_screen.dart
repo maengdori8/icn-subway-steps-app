@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/labeled_field.dart';
 import 'add_tip_screen.dart';
+import 'signup_screen.dart';
 
 // addTip: S02 '+ 팁 등록'에서 옴 → 성공하면 같은 단계의 S03으로 바뀐다.
 // general: 설정·내 팁·다시 로그인에서 옴 → 성공하면 들어온 화면으로 돌아간다(4차 REG-08).
@@ -53,7 +54,16 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  // 파란 '회원가입' 글자: 가입 화면으로 갔다가 가입하면 그 아이디·비밀번호로 바로 로그인한다(들어온 목적대로 이어짐).
+  Future<void> _openSignup() async {
+    final result = await Navigator.of(context).push(MaterialPageRoute<SignupResult>(builder: (_) => const SignupScreen()));
+    if (result == null || !mounted || _left) return;
+    _username.text = result.username;
+    _password.text = result.password;
+    await _submit(afterSignup: true);
+  }
+
+  Future<void> _submit({bool afterSignup = false}) async {
     if (_busy) return;
     final errors = {
       if (_username.text.trim().isEmpty) _FieldError.username,
@@ -88,6 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         navigator.pop(true);
       }
+      if (afterSignup) app.showMessage((s) => s.signedUp); // 화면을 옮긴 뒤 알린다
     } on RepositoryException catch (e) {
       if (!mounted || _left) return;
       final mismatch = e.code == RepositoryErrorCode.invalidCredentials;
@@ -152,6 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _password,
                     focusNode: _passwordFocus,
                     obscureText: !_showPassword,
+                    secret: true, // [보이기]로 글자를 보여도 키보드 제안·자동고침은 끈다
                     errorText: _errors.contains(_FieldError.password) ? s.errPass : null,
                     autofillHints: const [AutofillHints.password],
                     keyboardType: TextInputType.visiblePassword,
@@ -204,6 +216,16 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+              ],
+            ),
+            const Gap(AppSpace.section),
+            // 계정이 없으면 회원가입. 파란 글자는 테마의 링크 버튼 색(AppColors.link)이다.
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(s.noAccount, style: TextStyle(fontSize: 14, color: c.textSecondary)),
+                TextButton(onPressed: _busy ? null : _openSignup, child: Text(s.signUp)),
               ],
             ),
           ],

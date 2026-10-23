@@ -22,6 +22,7 @@ class AppSizes {
   static const double minimumTap = 48; // flutterAdaptations.sizes.minimumTap
   static const double button = 52; // 시안 .btn min-height
   static const double appBar = 56;
+  static const double navBar = 68; // sizes.navBarHeight(떠 있는 하단 메뉴 캡슐의 최소 높이)
 }
 
 // 글자(design-system.json typography + flutterAdaptations). 웹 본문 15 → Flutter 16, 캡션 11 → 12.
@@ -76,31 +77,18 @@ ThemeData buildAppTheme(Brightness brightness) {
     textTheme: text,
     extensions: [c],
     dividerTheme: DividerThemeData(color: c.divider, thickness: 1, space: 1),
+    // 밝은 상단 바(2026-10-22 사용자 요청, 인스타그램 느낌): 화면 바탕과 같은 surface에 굵은 본문색 제목, 가운데 정렬.
+    // 남색 signage는 이제 표지판 칩에만 쓴다. 상태 표시줄 아이콘은 바탕 밝기에 맞춘다.
     appBarTheme: AppBarTheme(
-      backgroundColor: c.signage,
-      foregroundColor: c.onSignage,
+      backgroundColor: c.surface,
+      foregroundColor: c.textPrimary,
+      surfaceTintColor: Colors.transparent,
       toolbarHeight: AppSizes.appBar,
-      centerTitle: false,
+      centerTitle: true,
       elevation: 0,
       scrolledUnderElevation: 0,
-      titleTextStyle: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, color: c.onSignage),
-      systemOverlayStyle: SystemUiOverlayStyle.light,
-    ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: c.surface,
-      surfaceTintColor: Colors.transparent,
-      indicatorColor: c.primary.withValues(alpha: 0.16),
-      height: 68,
-      labelTextStyle: WidgetStateProperty.resolveWith(
-        (states) => TextStyle(
-          fontSize: 12,
-          fontWeight: states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w500,
-          color: states.contains(WidgetState.selected) ? c.textPrimary : c.textSecondary,
-        ),
-      ),
-      iconTheme: WidgetStateProperty.resolveWith(
-        (states) => IconThemeData(color: states.contains(WidgetState.selected) ? c.primary : c.textSecondary),
-      ),
+      titleTextStyle: TextStyle(fontSize: 21, fontWeight: FontWeight.w700, color: c.textPrimary),
+      systemOverlayStyle: brightness == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(

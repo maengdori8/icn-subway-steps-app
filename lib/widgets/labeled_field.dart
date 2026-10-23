@@ -17,6 +17,7 @@ class LabeledField extends StatelessWidget {
     this.maxCount,
     this.readOnly = false,
     this.obscureText = false,
+    this.secret = false,
     this.minLines = 1,
     this.maxLines = 1,
     this.textInputAction,
@@ -36,6 +37,7 @@ class LabeledField extends StatelessWidget {
   final int? maxCount;
   final bool readOnly; // 올리는 중에는 읽기 전용(입력한 값이 조용히 버려지지 않게)
   final bool obscureText;
+  final bool secret; // 비밀번호 칸: [보이기]로 글자를 보여도 키보드 제안·자동고침을 끈다(CR·S04 규칙)
   final int minLines;
   final int maxLines;
   final TextInputAction? textInputAction;
@@ -61,8 +63,8 @@ class LabeledField extends StatelessWidget {
             focusNode: focusNode,
             readOnly: readOnly,
             obscureText: obscureText,
-            enableSuggestions: !obscureText,
-            autocorrect: !obscureText,
+            enableSuggestions: !(obscureText || secret),
+            autocorrect: !(obscureText || secret),
             minLines: minLines,
             maxLines: maxLines,
             textInputAction: textInputAction,

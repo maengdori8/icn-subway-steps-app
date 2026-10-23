@@ -4,6 +4,7 @@ import 'package:icn_subway_app/app.dart';
 import 'package:icn_subway_app/models/user_session.dart';
 import 'package:icn_subway_app/repositories/fake_subway_repository.dart';
 import 'package:icn_subway_app/state/app_controller.dart';
+import 'package:icn_subway_app/widgets/floating_tab_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 위젯 검사 공통 준비: 390×844 화면, 가짜 저장소(기본 지연 0), 빈 기기 저장소.
@@ -35,7 +36,8 @@ Future<AppController> pumpApp(
 // 가짜 저장소가 student01에게 주는 세션(번호 101). 예시 팁 2번의 주인이다.
 const demoSession = UserSession(userId: 101, username: 'student01', accessToken: 'fake-session-101');
 
-Finder get bottomNav => find.byType(NavigationBar);
+// 하단 메뉴: 떠 있는 둥근 캡슐(2026-10-22 사용자 요청으로 Material NavigationBar에서 바꿈).
+Finder get bottomNav => find.byType(FloatingTabBar);
 
 // 스크롤해서 보이게 한 뒤 누른다. 입력칸 초점을 먼저 풀어 커서 위치로 되돌아가는 스크롤을 막는다.
 Future<void> tapVisible(WidgetTester tester, Finder finder) async {

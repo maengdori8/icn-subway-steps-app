@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:icn_subway_app/models/tip.dart';
 import 'package:icn_subway_app/repositories/fake_subway_repository.dart';
 import 'package:icn_subway_app/repositories/subway_repository.dart';
 
@@ -111,6 +112,109 @@ void main() {
     expect(find.text('Tip posted'), findsOneWidget);
     expect(find.text('Wide gate on the left'), findsOneWidget);
     expect(find.text('Arrival exit B · by you'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('올리기 성공 뒤 그 단계의 팁을 서버에서 다시 읽는다(10장: 201 응답과 목록 재조회는 따로)', (tester) async {
+    final r = repo();
+    await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Wide gate on the left');
+    await tester.enterText(field(1), 'Arrival exit B');
+    await tester.pump();
+    await tapVisible(tester, button('Post tip'));
+    final created = r.requests.lastIndexOf(FakeOperation.createTip);
+    expect(created, isNonNegative);
+    expect(r.requests.sublist(created + 1), contains(FakeOperation.tips), reason: '등록 뒤 GET /api/tips를 다시 보냄');
+    expect(find.text('Wide gate on the left'), findsOneWidget);
+    expect(r.requests.where((o) => o == FakeOperation.createTip), hasLength(1), reason: '다시 읽기는 등록을 다시 보내지 않음');
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('올리기 시간 초과: 바로 다시 보내지 않고 목록 확인 → 없으면 그때 다시 올리기(교재 10장 Q04)', (tester) async {
+    final r = repo()..failNext(FakeOperation.createTip, RepositoryErrorCode.timeout);
+    await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Wide gate on the left');
+    await tester.enterText(field(1), 'Arrival exit B');
+    await tester.pump();
+    await tapVisible(tester, button('Post tip'));
+    expect(find.textContaining("can't tell if your tip was posted"), findsOneWidget);
+    expect(find.text('Try again'), findsNothing, reason: '확인 전에는 다시 올리기를 보이지 않음');
+    expect(textField(tester, 0).controller!.text, 'Wide gate on the left', reason: '값 유지');
+
+    await tapVisible(tester, find.text('Check tips'));
+    final created = r.requests.lastIndexOf(FakeOperation.createTip);
+    expect(r.requests.sublist(created + 1), contains(FakeOperation.tips), reason: '다시 보내기 전에 목록을 읽음');
+    expect(r.requests.where((o) => o == FakeOperation.createTip), hasLength(1), reason: '등록은 한 번만 보냄');
+    expect(find.text("Couldn't post your tip. What you typed is kept. Try again."), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+  });
+
+  testWidgets('시간 초과 뒤 하단 [Post tip]을 눌러도 다시 보내지 않고 목록부터 확인한다(Codex 10장 2회차 지적 1)', (tester) async {
+    final r = repo()..failNext(FakeOperation.createTip, RepositoryErrorCode.timeout);
+    await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Wide gate on the left');
+    await tester.enterText(field(1), 'Arrival exit B');
+    await tester.pump();
+    await tapVisible(tester, button('Post tip'));
+    expect(find.textContaining("can't tell if your tip was posted"), findsOneWidget);
+
+    await tapVisible(tester, button('Post tip'));
+    expect(r.requests.where((o) => o == FakeOperation.createTip), hasLength(1), reason: '등록을 다시 보내지 않음');
+    expect(r.requests.last, FakeOperation.tips, reason: '목록을 읽음');
+    expect(find.text("Couldn't post your tip. What you typed is kept. Try again."), findsOneWidget);
+  });
+
+  // 서버에 같은 내용의 팁이 이미 있고 이번 등록은 시간 초과로 끝난 상황. 이번 요청이 저장한 것인지 앞서 올린 것인지는
+  // 앱이 구별할 수 없으므로 '같은 팁이 이미 있다'고 알리고 다시 보내지 않는다(Codex 10장 2회차 지적 2).
+  testWidgets('시간 초과 뒤 목록에 같은 팁이 있으면 다시 보내지 않고 "같은 팁이 이미 있어요"로 닫는다', (tester) async {
+    final r = repo();
+    await tester.runAsync(
+      () => r.createTip(
+        const TipDraft(route: 'EXPRESS', stepNo: 1, title: 'Wide gate on the left', location: 'Arrival exit B'),
+        demoSession,
+      ),
+    );
+    r.failNext(FakeOperation.createTip, RepositoryErrorCode.timeout);
+    await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Wide gate on the left');
+    await tester.enterText(field(1), 'Arrival exit B');
+    await tester.pump();
+    await tapVisible(tester, button('Post tip'));
+    await tapVisible(tester, find.text('Check tips'));
+    expect(find.text('Walk out of the arrivals hall'), findsOneWidget, reason: 'S02로 돌아옴');
+    expect(find.text("Your tip is already in this step's tips."), findsOneWidget);
+    expect(find.text('Tip posted'), findsNothing, reason: '이번 요청이 올렸다고 단정하지 않음');
+    expect(r.allTips.where((t) => t.title == 'Wide gate on the left'), hasLength(1), reason: '중복 없음');
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('확인은 보낸 사용자로 맞춘다: 시간 초과 뒤 로그아웃해도 토큰 없이 읽어 같은 팁을 찾는다(Codex 10장 2회차 지적 3)', (tester) async {
+    final r = repo();
+    await tester.runAsync(
+      () => r.createTip(
+        const TipDraft(route: 'EXPRESS', stepNo: 1, title: 'Wide gate on the left', location: 'Arrival exit B'),
+        demoSession,
+      ),
+    );
+    r.failNext(FakeOperation.createTip, RepositoryErrorCode.timeout);
+    final app = await pumpApp(tester, repository: r, session: demoSession);
+    await openAddTip(tester);
+    await tester.enterText(field(0), 'Wide gate on the left');
+    await tester.enterText(field(1), 'Arrival exit B');
+    await tester.pump();
+    await tapVisible(tester, button('Post tip'));
+    app.signOut();
+    await tester.pumpAndSettle();
+    await tapVisible(tester, find.text('Check tips'));
+    expect(find.text("Your tip is already in this step's tips."), findsOneWidget);
+    expect(r.allTips.where((t) => t.title == 'Wide gate on the left'), hasLength(1), reason: '중복 없음');
     await tester.pump(const Duration(seconds: 4));
     await tester.pumpAndSettle();
   });

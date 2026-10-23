@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="ICN Subway Steps · 10장 앱 연결 검사" tests="31" time="0.503">
+  <testsuite name="0 준비: 로그인과 앱이 만든 팁 찾기 / A 로그인 · 200" id="9e734823-8899-45e8-b1c9-0bebaf69ba64" timestamp="2026-10-21T06:16:40.811Z" tests="1" failures="0" errors="0" time="0.164">
+    <testcase name="토큰과 사용자 번호를 받았다(값은 출력하지 않음)" time="0.164" classname="0A200"/>
+  </testsuite>
+  <testsuite name="0 준비: 로그인과 앱이 만든 팁 찾기 / 앱이 만든 팁 찾기 · GET /api/me/tips(A) · 200" id="824c064c-a5f0-4840-a17c-45377e917813" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="상태 코드 200" time="0.009" classname="0GetApiMeTipsA200"/>
+    <testcase name="앱이 만든 팁 번호 42(제목으로 찾음)" time="0.009" classname="0GetApiMeTipsA200"/>
+  </testsuite>
+  <testsuite name="0 준비: 로그인과 앱이 만든 팁 찾기 / B 로그인 · 200" id="5f635ded-e4d0-4a66-8e6e-ef90d801bf73" timestamp="2026-10-21T06:16:40.811Z" tests="1" failures="0" errors="0" time="0.122">
+    <testcase name="토큰과 사용자 번호를 받았다(값은 출력하지 않음)" time="0.122" classname="0B200"/>
+  </testsuite>
+  <testsuite name="0 준비: 로그인과 앱이 만든 팁 찾기 / 앱이 만든 팁 다시 읽기 · GET /api/tips/{appTipId} · 200" id="0fa08f7a-0c0c-4d5e-92e7-f1389c1a94fb" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.005">
+    <testcase name="상태 코드 200" time="0.005" classname="0GetApiTipsAppTipId200"/>
+    <testcase name="토큰 없이 읽어 mine은 false, 예시 팁이 아니다" time="0.005" classname="0GetApiTipsAppTipId200"/>
+    <testcase name="비교할 값 11개가 모두 있고 자료형이 맞다" time="0.005" classname="0GetApiTipsAppTipId200"/>
+  </testsuite>
+  <testsuite name="1 공개 목록 대조(토큰 없이) / 경로 목록 · GET /api/routes · 200" id="256c517b-2a45-4d2e-8b3f-b786214bc85f" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="상태 코드 200" time="0.009" classname="1GetApiRoutes200"/>
+    <testcase name="직통·일반은 이용 가능, T2는 준비 중(docs/samples/routes-list.json과 같음)" time="0.009" classname="1GetApiRoutes200"/>
+  </testsuite>
+  <testsuite name="1 공개 목록 대조(토큰 없이) / 앱 팁의 단계 · GET /api/routes/{route}/steps · 200" id="49f2cac7-9cb6-4735-8460-faf03ef161eb" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.009">
+    <testcase name="상태 코드 200" time="0.009" classname="1GetApiRoutesRouteSteps200"/>
+    <testcase name="앱 팁의 단계 번호가 이 경로의 단계에 있다" time="0.009" classname="1GetApiRoutesRouteSteps200"/>
+  </testsuite>
+  <testsuite name="1 공개 목록 대조(토큰 없이) / 그 단계의 팁 목록 · GET /api/tips?route=&amp;step= · 200" id="77d4039d-8b94-497e-9087-9c75f3c3838d" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.009">
+    <testcase name="상태 코드 200" time="0.009" classname="1GetApiTipsRouteAmpStep200"/>
+    <testcase name="앱이 만든 팁이 목록에 있고 제목·위치·상태가 같다" time="0.009" classname="1GetApiTipsRouteAmpStep200"/>
+    <testcase name="토큰 없이 읽어 mine은 모두 false" time="0.009" classname="1GetApiTipsRouteAmpStep200"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 토큰 없이 등록 · POST /api/tips · 401" id="50c52d21-ed3a-4958-a69e-0d569fcd203e" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.004">
+    <testcase name="상태 코드 401" time="0.004" classname="2401PostApiTips401"/>
+    <testcase name="오류 code UNAUTHORIZED" time="0.004" classname="2401PostApiTips401"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 목록 다시 읽기 · 개수 그대로 · 200" id="40937333-5a72-42f3-9d47-4ade5c57d87b" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.009">
+    <testcase name="상태 코드 200" time="0.009" classname="2401200"/>
+    <testcase name="팁 개수가 그대로(토큰 없는 등록이 저장되지 않음)" time="0.009" classname="2401200"/>
+    <testcase name="토큰 없이 보낸 제목의 팁이 없다" time="0.009" classname="2401200"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 토큰 없이 상태 변경 · PATCH /api/tips/{appTipId}/status · 401" id="ea7173a6-3628-4bef-bde3-dd9f2d63b5b2" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.005">
+    <testcase name="상태 코드 401" time="0.005" classname="2401PatchApiTipsAppTipIdStatus401"/>
+    <testcase name="오류 code UNAUTHORIZED" time="0.005" classname="2401PatchApiTipsAppTipIdStatus401"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 앱 팁 다시 읽기 · 값 그대로 · 200" id="859c48cc-d205-46ec-a8e0-caaf4ebe837f" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.006">
+    <testcase name="상태 코드 200" time="0.006" classname="2401200"/>
+    <testcase name="토큰 없는 상태 변경 뒤에도 값 11개가 그대로" time="0.006" classname="2401200"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 무효 토큰으로 공개 팁 목록 · GET /api/tips · 401" id="9cca6c38-8c00-4fa7-af43-051201537a2f" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.003">
+    <testcase name="상태 코드 401" time="0.003" classname="2401GetApiTips401"/>
+    <testcase name="오류 code UNAUTHORIZED" time="0.003" classname="2401GetApiTips401"/>
+    <testcase name="문구: 로그인이 만료되었거나 올바르지 않습니다." time="0.003" classname="2401GetApiTips401"/>
+  </testsuite>
+  <testsuite name="2 인증 없음·무효 토큰 → 401, 값 그대로 / 토큰 없이 내 팁 · GET /api/me/tips · 401" id="5698a0b9-0c89-451e-93d5-b4e883bae162" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.005">
+    <testcase name="상태 코드 401" time="0.005" classname="2401GetApiMeTips401"/>
+    <testcase name="오류 code UNAUTHORIZED" time="0.005" classname="2401GetApiMeTips401"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / B가 상태 변경 · PATCH /api/tips/{appTipId}/status · 403" id="f2c46bdc-dc87-4b02-adf3-78794d0dc22f" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.010">
+    <testcase name="상태 코드 403" time="0.010" classname="3B403BPatchApiTipsAppTipIdStatus403"/>
+    <testcase name="오류 code FORBIDDEN" time="0.010" classname="3B403BPatchApiTipsAppTipIdStatus403"/>
+    <testcase name="문구: 이 팁을 올린 사람만 상태를 바꿀 수 있습니다." time="0.010" classname="3B403BPatchApiTipsAppTipIdStatus403"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / B가 같은 상태로 다시 보냄 · 403" id="96ef829c-c05a-4095-8cd2-fb0fc5b6759a" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.008">
+    <testcase name="상태 코드 403" time="0.008" classname="3B403B403"/>
+    <testcase name="오류 code FORBIDDEN" time="0.008" classname="3B403B403"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / B 토큰으로 앱 팁 읽기 · 값 그대로 · mine false · 200" id="618c3c9b-6cca-4cd2-a0bc-37bb751befeb" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 200" time="0.007" classname="3B403BMineFalse200"/>
+    <testcase name="B의 거부 뒤에도 값 11개가 그대로" time="0.007" classname="3B403BMineFalse200"/>
+    <testcase name="B에게는 mine이 false" time="0.007" classname="3B403BMineFalse200"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / B의 내 팁 · GET /api/me/tips · 200 · A의 팁 없음" id="1add9cf7-6232-4632-8750-385c629aeaa8" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 200" time="0.007" classname="3B403BGetApiMeTips200A"/>
+    <testcase name="목록에 앱이 만든 팁이 없다" time="0.007" classname="3B403BGetApiMeTips200A"/>
+    <testcase name="B의 내 팁은 모두 B가 올린 것" time="0.007" classname="3B403BGetApiMeTips200A"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / B가 삭제 · DELETE /api/tips/{appTipId} · 405(삭제 API 없음)" id="74cc9106-ad07-4518-b641-61317da3764c" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.005">
+    <testcase name="상태 코드 405" time="0.005" classname="3B403BDeleteApiTipsAppTipId405Api"/>
+    <testcase name="오류 code METHOD_NOT_ALLOWED" time="0.005" classname="3B403BDeleteApiTipsAppTipId405Api"/>
+  </testsuite>
+  <testsuite name="3 다른 사용자(B) → 403, 값 그대로 / 앱 팁 다시 읽기 · 값 그대로 · 200" id="f0495fa5-a8fc-411c-bbb3-f7db169111a3" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.006">
+    <testcase name="상태 코드 200" time="0.006" classname="3B403200"/>
+    <testcase name="B의 삭제 요청 뒤에도 값 11개가 그대로" time="0.006" classname="3B403200"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 상태 변경 · PATCH · 200" id="86d7418a-b04d-49f6-acfa-c3fa984c263e" timestamp="2026-10-21T06:16:40.811Z" tests="5" failures="0" errors="0" time="0.012">
+    <testcase name="상태 코드 200" time="0.012" classname="4AAPatch200"/>
+    <testcase name="상태가 바뀌었다" time="0.012" classname="4AAPatch200"/>
+    <testcase name="verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)" time="0.012" classname="4AAPatch200"/>
+    <testcase name="status·verifiedAt 말고 다른 값은 그대로" time="0.012" classname="4AAPatch200"/>
+    <testcase name="비교할 값 11개가 모두 있고 자료형이 맞다" time="0.012" classname="4AAPatch200"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 같은 상태로 다시 보냄 · 200 · verifiedAt만 다시 기록" id="0af072dc-aa63-48cf-96e8-659a21d6981e" timestamp="2026-10-21T06:16:40.811Z" tests="4" failures="0" errors="0" time="0.010">
+    <testcase name="상태 코드 200" time="0.010" classname="4AA200VerifiedAt"/>
+    <testcase name="verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)" time="0.010" classname="4AA200VerifiedAt"/>
+    <testcase name="verifiedAt 말고 다른 값은 그대로" time="0.010" classname="4AA200VerifiedAt"/>
+    <testcase name="비교할 값 11개가 모두 있고 자료형이 맞다" time="0.010" classname="4AA200VerifiedAt"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 명세 밖 상태 · 400 VALIDATION_FAILED" id="b2a752d7-4969-4dfb-962a-16611f9636b0" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 400" time="0.007" classname="4AA400ValidationFailed"/>
+    <testcase name="오류 code VALIDATION_FAILED" time="0.007" classname="4AA400ValidationFailed"/>
+    <testcase name="errors.status 있음" time="0.007" classname="4AA400ValidationFailed"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 본문에 ownerId를 넣음 · 400 INVALID_REQUEST_BODY" id="d1026666-82b5-4f2c-a2fe-2ffdb0c77be2" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 400" time="0.007" classname="4AAOwnerId400InvalidRequestBody"/>
+    <testcase name="오류 code INVALID_REQUEST_BODY" time="0.007" classname="4AAOwnerId400InvalidRequestBody"/>
+    <testcase name="errors.ownerId 있음" time="0.007" classname="4AAOwnerId400InvalidRequestBody"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / 앱 팁 다시 읽기 · 400 뒤 값 그대로 · 200" id="08dabf80-ea9a-4df8-82a9-e5dc60b455bd" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.008">
+    <testcase name="상태 코드 200" time="0.008" classname="4A400200"/>
+    <testcase name="잘못된 본문 두 번 뒤에도 값 11개가 그대로" time="0.008" classname="4A400200"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A의 내 팁 · GET /api/me/tips · 200 · 앱 팁 있음" id="846944dd-4514-4cca-81f9-0b30602c5135" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.015">
+    <testcase name="상태 코드 200" time="0.015" classname="4AAGetApiMeTips200"/>
+    <testcase name="앱이 만든 팁이 A의 내 팁에 있고 mine이 true" time="0.015" classname="4AAGetApiMeTips200"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 원래 상태로 되돌림 · PATCH · 200" id="6b4e7417-7165-465c-8de7-fefb0238d7a4" timestamp="2026-10-21T06:16:40.811Z" tests="5" failures="0" errors="0" time="0.011">
+    <testcase name="상태 코드 200" time="0.011" classname="4AAPatch200"/>
+    <testcase name="원래 상태로 돌아왔다" time="0.011" classname="4AAPatch200"/>
+    <testcase name="verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)" time="0.011" classname="4AAPatch200"/>
+    <testcase name="status·verifiedAt 말고 다른 값은 그대로" time="0.011" classname="4AAPatch200"/>
+    <testcase name="비교할 값 11개가 모두 있고 자료형이 맞다" time="0.011" classname="4AAPatch200"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / A가 삭제 · DELETE /api/tips/{appTipId} · 405(삭제 API 없음)" id="53873736-f73f-4d4b-ba02-1944d9710f58" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 405" time="0.007" classname="4AADeleteApiTipsAppTipId405Api"/>
+    <testcase name="오류 code METHOD_NOT_ALLOWED" time="0.007" classname="4AADeleteApiTipsAppTipId405Api"/>
+  </testsuite>
+  <testsuite name="4 등록자(A) 상태 변경·반복·잘못된 본문 / 앱 팁 다시 읽기 · 남아 있고 값 그대로 · 200" id="7cfb1969-09a6-4aa6-8c41-e19c589863a0" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.006">
+    <testcase name="상태 코드 200" time="0.006" classname="4A200"/>
+    <testcase name="삭제 요청 뒤에도 팁이 남아 있고 값 11개가 그대로" time="0.006" classname="4A200"/>
+  </testsuite>
+  <testsuite name="5 없는 번호·형식 / 없는 팁 읽기 · GET /api/tips/999999999 · 404" id="d85669ac-fd55-44bd-afde-8eb0f03002b7" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.006">
+    <testcase name="상태 코드 404" time="0.006" classname="5GetApiTips999999999404"/>
+    <testcase name="오류 code NOT_FOUND" time="0.006" classname="5GetApiTips999999999404"/>
+  </testsuite>
+  <testsuite name="5 없는 번호·형식 / 없는 팁 상태 변경(A) · 404" id="f27fccea-1b01-486b-9376-24c04788697d" timestamp="2026-10-21T06:16:40.811Z" tests="2" failures="0" errors="0" time="0.007">
+    <testcase name="상태 코드 404" time="0.007" classname="5A404"/>
+    <testcase name="오류 code NOT_FOUND" time="0.007" classname="5A404"/>
+  </testsuite>
+  <testsuite name="5 없는 번호·형식 / 숫자가 아닌 번호 · GET /api/tips/abc · 400" id="1418ce74-da74-4953-bb02-3c947fbd7073" timestamp="2026-10-21T06:16:40.811Z" tests="3" failures="0" errors="0" time="0.005">
+    <testcase name="상태 코드 400" time="0.005" classname="5GetApiTipsAbc400"/>
+    <testcase name="오류 code VALIDATION_FAILED" time="0.005" classname="5GetApiTipsAbc400"/>
+    <testcase name="errors.id 있음" time="0.005" classname="5GetApiTipsAbc400"/>
+  </testsuite>
+</testsuites>

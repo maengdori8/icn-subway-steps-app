@@ -58,7 +58,7 @@ void main() {
         );
         await tester.tap(find.byIcon(Icons.settings_outlined));
         await tester.pumpAndSettle();
-        await scrollTo(tester, find.textContaining('creativecommons.org'));
+        await scrollTo(tester, find.textContaining('Station-Gates.JPG')); // 사진 출처 맨 아래 줄까지
 
         await tester.tap(find.byIcon(Icons.lightbulb_outline));
         await tester.pumpAndSettle();
@@ -79,7 +79,8 @@ void main() {
   testWidgets('누르는 영역은 48 이상(하단 메뉴·링크 버튼·이전/다음)', (tester) async {
     await pumpApp(tester, session: demoSession, prefs: {'progress.LOCAL': 3});
     for (final f in [find.text('Routes'), find.text('My tips'), find.text('Settings')]) {
-      final dest = find.ancestor(of: f, matching: find.byType(NavigationDestination));
+      // 하단 메뉴가 떠 있는 캡슐로 바뀌어(2026-10-22 사용자 요청) 탭 하나의 누르는 영역은 그 InkWell이다.
+      final dest = find.ancestor(of: f, matching: find.byType(InkWell)).first;
       expect(tester.getSize(dest).height, greaterThanOrEqualTo(48));
     }
     expect(tester.getSize(find.widgetWithText(TextButton, 'Start over')).height, greaterThanOrEqualTo(48));

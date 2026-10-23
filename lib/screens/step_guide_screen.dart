@@ -14,6 +14,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
 import '../widgets/mixed_text.dart';
+import '../widgets/offline_message.dart';
 import '../widgets/step_widgets.dart';
 import '../widgets/tip_card.dart';
 import 'add_tip_screen.dart';
@@ -23,7 +24,7 @@ import 'tip_status_actions.dart';
 enum _TipsPhase { loading, ready, failed }
 
 // S02 단계 안내. 진행 표시 → 4:3 사진(가로로 밀어 단계 이동) → 역할 라벨·표지판 칩 → 제목 → 안내 2줄
-// → 엘리베이터 줄 → 팁 영역. 이전·다음은 하단 고정(글자 2배 이상이면 본문 끝으로).
+// → 엘리베이터 줄 → 팁 영역. 이전·다음은 하단 고정(본문 글자 1.7배 이상이면 본문 끝으로, stepNavInline).
 // [initialIndex]가 단계 수와 같으면 완료 화면으로 열린다.
 class StepGuideScreen extends StatefulWidget {
   const StepGuideScreen({super.key, required this.route, required this.initialIndex, this.showOlderTips = false});
@@ -40,6 +41,8 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   late final AppController _app;
   List<GuideStep>? _steps;
   RepositoryException? _stepsError;
+  int _stepsRequest = 0;
+  bool _stepsRecovering = false; // 연결 끊김에서 시작해 아직 단계를 못 읽음: 실패 화면을 AutoRetry로 감싼다
   int _index = 0;
   PageController? _pages;
   bool _pageAnimating = false;
@@ -52,6 +55,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   int? _freshTipId;
   Timer? _freshTimer;
   final Map<int, GlobalKey> _tipKeys = {};
+  final ScrollController _scroll = ScrollController(); // 단계를 옮기면 본문을 맨 위로 올린다(S02 규칙)
   late int _seenGeneration;
 
   String get _code => widget.route.code;
@@ -84,57 +88,80 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   void dispose() {
     _app.tipsRevision.removeListener(_onTipPosted);
     _pages?.dispose();
+    _scroll.dispose();
     _freshTimer?.cancel();
     super.dispose();
   }
 
+  // 요청 번호로 늦게 온 앞 요청의 결과를 버린다([다시 시도]와 자동 다시 읽기가 겹쳐도 사진 컨트롤러·팁 읽기는 한 번).
   Future<void> _loadSteps() async {
+    final request = ++_stepsRequest;
     try {
       final steps = await _app.loadSteps(_code);
-      if (!mounted) return;
+      if (!mounted || request != _stepsRequest) return;
       setState(() {
         _steps = steps;
         _stepsError = null;
+        _stepsRecovering = false;
         _index = widget.initialIndex.clamp(0, steps.length);
-        _pages = _newPageController(_index);
+        _pages = steps.isEmpty ? null : _newPageController(_index); // 단계 0개는 빈 상태만 보인다
       });
       _loadTips();
     } on RepositoryException catch (e) {
-      if (!mounted) return;
-      setState(() => _stepsError = e);
+      if (!mounted || request != _stepsRequest) return;
+      setState(() {
+        _stepsError = e;
+        if (e.code == RepositoryErrorCode.offline) _stepsRecovering = true;
+      });
     }
   }
+
+  // [다시 시도]: 불러오는 중 화면으로 바꾸고 단계를 다시 읽는다.
+  void _retrySteps() {
+    setState(() => _stepsError = null);
+    _loadSteps();
+  }
+
+  Widget _stepsFailure(AppStrings s) => _stepsError!.code == RepositoryErrorCode.offline
+      ? OfflineMessage(strings: s, onRetry: _retrySteps)
+      : StatusMessage(title: s.loadError, actionLabel: s.retry, onAction: _retrySteps);
 
   PageController _newPageController(int index) =>
       PageController(initialPage: index.clamp(0, (_steps?.length ?? 1) - 1), keepPage: false);
 
-  Future<void> _loadTips() async {
+  // [quiet]: 보이는 목록을 그대로 두고 서버에서 다시 읽는다(등록·상태 변경 뒤 재조회, 10장).
+  // 다시 읽기에 실패하면 방금 받은 응답으로 그린 목록을 그대로 둔다.
+  Future<void> _loadTips({bool quiet = false}) async {
     final step = _step;
     if (step == null) return;
     final request = ++_tipsRequest;
     final session = _app.session;
     final generation = _app.sessionGeneration;
-    setState(() => _tipsPhase = _TipsPhase.loading);
+    final keepList = quiet && _tipsPhase == _TipsPhase.ready;
+    if (!keepList) setState(() => _tipsPhase = _TipsPhase.loading);
     try {
       final tips = await _app.repository.fetchTips(_code, step.stepNo, session: session);
-      if (!mounted || request != _tipsRequest) return; // 그사이 단계를 옮겼으면 버린다
+      // 그사이 단계를 옮겼거나 로그인이 바뀌었으면 버린다(바뀐 세션은 didChangeDependencies가 다시 읽는다).
+      if (!mounted || request != _tipsRequest || generation != _app.sessionGeneration) return;
       setState(() {
         _tips = tips;
         _tipsPhase = _TipsPhase.ready;
       });
       _revealFreshTip();
     } on RepositoryException catch (e) {
-      if (!mounted || request != _tipsRequest) return;
+      if (!mounted || request != _tipsRequest || generation != _app.sessionGeneration) return;
       // 만료·무효 토큰은 공개 조회도 401이다. 그 세션을 끝내면(로그아웃) 이 화면이 익명으로 다시 읽는다.
       if (e.code == RepositoryErrorCode.unauthorized && session != null && _app.sessionExpired(generation)) {
         _app.showMessage((s) => s.loggedOut);
         return;
       }
+      if (keepList) return;
       setState(() => _tipsPhase = _TipsPhase.failed);
     }
   }
 
-  // 팁이 올라감(S03이 떠난 뒤 끝난 경우 포함). 지금 보고 있는 단계의 팁이면 목록에 넣고 강조한다.
+  // 팁이 올라감(S03이 떠난 뒤 끝난 경우 포함). 지금 보고 있는 단계의 팁이면 목록에 넣고 강조한 뒤,
+  // 그 단계의 팁을 서버에서 다시 읽어 저장 결과로 맞춘다(10장: 201 응답과 목록 재조회는 따로 확인).
   void _onTipPosted() {
     final tip = _app.lastPostedTip;
     final step = _step;
@@ -150,15 +177,18 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
       _freshTipId = tip.id;
     });
     _revealFreshTip();
+    _loadTips(quiet: true);
   }
 
   void _revealFreshTip() {
     final id = _freshTipId;
     if (id == null) return;
+    // DS freshTip: 300ms 스크롤. 동작 줄이기 설정이면 바로 옮긴다(DS·CR 규칙).
+    final duration = MediaQuery.of(context).disableAnimations ? Duration.zero : const Duration(milliseconds: 300);
     SchedulerBinding.instance.addPostFrameCallback((_) {
       final ctx = _tipKeys[id]?.currentContext;
       if (ctx != null && ctx.mounted) {
-        Scrollable.ensureVisible(ctx, alignment: 0.5, duration: const Duration(milliseconds: 300));
+        Scrollable.ensureVisible(ctx, alignment: 0.5, duration: duration);
       }
     });
     _freshTimer?.cancel();
@@ -187,7 +217,19 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
     });
     _app.setProgress(_code, next);
     if (!fromSwipe && !wasDone && next < steps.length) _syncPage(next);
+    _scrollToTop();
     _loadTips();
+  }
+
+  // 단계를 옮기면(버튼·사진 밀기·전체 단계 목록) 본문을 맨 위(진행 표시)로 올린다(S02 명세 '스크롤 위치' 규칙).
+  // 움직임은 DS photoPaging과 같은 250ms easeOut, 동작 줄이기 설정이면 바로 올린다.
+  void _scrollToTop() {
+    if (!_scroll.hasClients || _scroll.offset == 0) return;
+    if (MediaQuery.of(context).disableAnimations) {
+      _scroll.jumpTo(0);
+    } else {
+      _scroll.animateTo(0, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    }
   }
 
   Future<void> _syncPage(int page) async {
@@ -237,13 +279,16 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
   }
 
   @override
+  void reloadTipsQuietly() => _loadTips(quiet: true);
+
+  @override
   Widget build(BuildContext context) {
     final app = AppScope.of(context);
     final s = app.strings;
     final c = AppColors.of(context);
     final routeColor = c.routeColor(_code);
     final steps = _steps;
-    final inlineNav = MediaQuery.textScalerOf(context).scale(16) / 16 >= 2.0;
+    final inlineNav = stepNavInline(MediaQuery.textScalerOf(context));
 
     Widget body;
     if (steps == null) {
@@ -253,25 +298,27 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
                 FocusHeading(
                   child: Text(s.loadingSteps, style: TextStyle(color: c.textSecondary)),
                 ),
+                SlowConnectionNote(message: s.slowConnection),
                 const Gap(AppSpace.section),
                 const AspectRatio(aspectRatio: 4 / 3, child: SkeletonBox()),
               ],
             )
           : ScrollColumn(
               children: [
-                StatusMessage(
-                  title: _stepsError!.code == RepositoryErrorCode.offline ? s.offline : s.loadError,
-                  body: _stepsError!.code == RepositoryErrorCode.offline ? s.offlineSub : null,
-                  actionLabel: s.retry,
-                  onAction: () {
-                    setState(() => _stepsError = null);
-                    _loadSteps();
-                  },
-                ),
+                // 연결 끊김이면 그림과 함께 안내한다. 연결 끊김에서 시작했으면 연결되는 대로 저절로 다시 읽는다(AutoRetry).
+                _stepsRecovering ? AutoRetry(onRetry: _loadSteps, child: _stepsFailure(s)) : _stepsFailure(s),
               ],
             );
+    } else if (steps.isEmpty) {
+      // 단계가 0개인 경로: 완료 화면 대신 빈 상태(S02 명세 states)
+      body = ScrollColumn(
+        children: [
+          StatusMessage(title: s.noSteps, actionLabel: s.toList, onAction: () => Navigator.of(context).maybePop()),
+        ],
+      );
     } else {
       body = ScrollColumn(
+        controller: _scroll,
         children: [
           ..._done ? _doneContent(s, c, routeColor) : _stepContent(app, s, c, routeColor),
           if (inlineNav) ...[const Gap(AppSpace.section), _navButtons(s, routeColor)],
@@ -289,7 +336,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
         title: Text(widget.route.name.of(app.language)),
       ),
       body: body,
-      bottomNavigationBar: steps == null || inlineNav
+      bottomNavigationBar: steps == null || steps.isEmpty || inlineNav
           ? null
           : Container(
               decoration: BoxDecoration(
@@ -320,11 +367,14 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
         count: steps.length,
         color: routeColor,
         strings: s,
-        trailing: Semantics(
-          expanded: _showAll,
-          child: TextButton(
-            onPressed: () => setState(() => _showAll = !_showAll),
-            child: Text(_showAll ? s.hideSteps : s.allSteps),
+        // 펼침 상태가 버튼과 한 노드로 읽히게 합친다(DS 펼침 버튼 규칙: Semantics expanded).
+        trailing: MergeSemantics(
+          child: Semantics(
+            expanded: _showAll,
+            child: TextButton(
+              onPressed: () => setState(() => _showAll = !_showAll),
+              child: Text(_showAll ? s.hideSteps : s.allSteps),
+            ),
           ),
         ),
       ),
@@ -348,6 +398,7 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
       ],
       const Gap(AppSpace.section),
       // 사진: 스크롤 안에서 4:3 고정(줄어들지 않음). 가로로 밀면 단계 이동, 마지막 단계에서 밀어도 완료되지 않는다.
+      // 넘길 때는 인스타그램 스토리처럼 입체로 돈다(CubePage, 동작 줄이기면 평평하게).
       AspectRatio(
         aspectRatio: 4 / 3,
         child: ClipRRect(
@@ -356,7 +407,11 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
             controller: _pages,
             itemCount: steps.length,
             onPageChanged: _onPageChanged,
-            itemBuilder: (context, i) => StepPhoto(step: steps[i], language: lang, strings: s),
+            itemBuilder: (context, i) => CubePage(
+              controller: _pages!,
+              index: i,
+              child: StepPhoto(step: steps[i], language: lang, strings: s),
+            ),
           ),
         ),
       ),
@@ -431,6 +486,12 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
           liveRegion: true,
           child: Text(s.tipsLoading, style: TextStyle(fontSize: 12, color: c.textSecondary)),
         ),
+        // 단계를 옮기면 팁 요청도 새로 보내므로 요청 번호마다 8초를 다시 센다.
+        SlowConnectionNote(
+          key: ValueKey(_tipsRequest),
+          message: s.slowConnection,
+          style: TextStyle(fontSize: 12, color: c.textSecondary),
+        ),
         const Gap(8),
         const SkeletonBox(height: 56, radius: 12),
       ],
@@ -443,11 +504,13 @@ class _StepGuideScreenState extends State<StepGuideScreen> with TipStatusActions
         if (older.isNotEmpty) ...[
           Align(
             alignment: AlignmentDirectional.centerStart,
-            child: Semantics(
-              expanded: _showOlder,
-              child: TextButton(
-                onPressed: () => setState(() => _showOlder = !_showOlder),
-                child: Text(_showOlder ? s.hideOld : s.showOld(older.length)),
+            child: MergeSemantics(
+              child: Semantics(
+                expanded: _showOlder,
+                child: TextButton(
+                  onPressed: () => setState(() => _showOlder = !_showOlder),
+                  child: Text(_showOlder ? s.hideOld : s.showOld(older.length)),
+                ),
               ),
             ),
           ),
@@ -557,11 +620,13 @@ class _StepListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    // 자식 낭독을 빼고 'Step n of N: 제목' 하나로 읽되, 누르기 동작은 이 노드에 둔다(DS 단계 목록 규칙: 버튼으로 읽힘).
     return Semantics(
       button: true,
       selected: current,
       label: semanticsLabel,
       excludeSemantics: true,
+      onTap: onTap,
       child: Material(
         color: c.surfaceContainer,
         shape: RoundedRectangleBorder(

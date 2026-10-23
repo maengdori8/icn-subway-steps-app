@@ -42,7 +42,9 @@ void main() {
     await tester.tap(button('Next'));
     await tester.pumpAndSettle();
     expect(find.text('Go down to the Transportation Center'), findsOneWidget);
-    expect(find.text('Photo coming soon'), findsWidgets);
+    // 2026-10-22: 비어 있던 2단계 사진을 교통센터 사진으로 채움. 출처 한 줄이 사진 아래에 붙는다.
+    expect(find.image(const AssetImage('assets/photos/transport_center.jpg')), findsOneWidget);
+    expect(find.textContaining('Minseong Kim / Wikimedia Commons'), findsOneWidget);
     expect(app.progressOf('EXPRESS', 5), 1);
 
     await tester.tap(button('Previous'));

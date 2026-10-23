@@ -19,6 +19,8 @@ mixin TipStatusActions<T extends StatefulWidget> on State<T> {
   // 응답이 왔을 때 그 팁이 아직 이 화면에 보이는지(S02는 단계를 옮겼을 수 있다).
   bool isTipOnScreen(Tip tip);
   void applyUpdatedTip(Tip updated);
+  // 상태 변경이 성공한 뒤 서버에서 목록을 다시 읽어 저장 결과로 맞춘다(10장: 응답과 재조회를 따로 확인).
+  void reloadTipsQuietly();
 
   Future<void> toggleTipStatus(Tip tip) async {
     final app = AppScope.read(context);
@@ -34,6 +36,7 @@ mixin TipStatusActions<T extends StatefulWidget> on State<T> {
       // 그사이 다른 세션이 되었으면 앞 세션 기준 응답(mine 등)을 목록에 넣지 않는다(새 세션은 목록을 다시 읽는다).
       if (!mounted || app.sessionGeneration != generation) return;
       setState(() => applyUpdatedTip(updated));
+      reloadTipsQuietly();
     } on RepositoryException catch (e) {
       // 그사이 다시 로그인했으면 앞 세션의 실패는 버린다(새 로그인 직후 다시 막지 않게).
       if (!mounted || app.sessionGeneration != generation) return;

@@ -1,5 +1,5 @@
 사진 출처와 라이선스 (인천공항 → 지하철 안내 앱, 개인 학습용)
-확인·다운로드: 2026-10-20
+확인·다운로드: 2026-10-20 (3번 2장과 4번 2장은 2026-10-22에 추가)
 
 ==================================================================
 1. datagokr\  (27장)
@@ -33,8 +33,53 @@
 - 표시 예 : "Photo: MNXANL / Wikimedia Commons, CC BY-SA 4.0"
 
 ==================================================================
+3. wikimedia\  추가 2장 (2026-10-22 받음, 앱의 빈 사진 2곳)
+==================================================================
+- 파일·작성자·라이선스 (모두 Wikimedia Commons, Own work)
+  * Incheon_Airport_Transportation_Center_Main_Hall.jpg  (5184x3332, 9,485,086 bytes)
+    작성자  : Minseong Kim (Commons 사용자 IMKSv), 2016-02-03 촬영
+    라이선스: CC BY-SA 4.0  https://creativecommons.org/licenses/by-sa/4.0/
+    원본    : https://commons.wikimedia.org/wiki/File:Incheon_Airport_Transportation_Center_Main_Hall.jpg
+    (교통센터 큰 홀과 에스컬레이터. 앱 2단계 '교통센터로 내려가기')
+  * AREX-Incheon-International-Airport-Station-Gates.JPG  (2816x2112, 3,108,800 bytes)
+    작성자  : Kanchi1979, 2007-04-30 촬영
+    라이선스: CC BY 2.5  https://creativecommons.org/licenses/by/2.5/
+    원본    : https://commons.wikimedia.org/wiki/File:AREX-Incheon-International-Airport-Station-Gates.JPG
+    (인천국제공항역 개찰구와 '타는 곳' 표지판. 앱 일반열차 4단계 '개찰구에 카드 찍기')
+- 주의    : 개찰구 사진은 2007년 촬영이라 지금 기계·표지판과 다를 수 있음. 그래서 출처 표시에 연도를 함께 적음.
+            CC BY 2.5는 작성자·라이선스 표시만 필요(동일조건 없음). CC BY-SA 4.0 사진은 수정해 공개하면 결과물도 같은 라이선스.
+- 표시 예 : "Photo: Minseong Kim / Wikimedia Commons · CC BY-SA 4.0"
+            "Photo (2007): Kanchi1979 / Wikimedia Commons · CC BY 2.5"
+
+==================================================================
+4. wikimedia\  추가 2장 (2026-10-22 받음, 직통열차 4·5단계)
+==================================================================
+- 파일 이름에 따옴표·한자가 있어 내려받을 때 영문 이름으로 바꿔 저장함. 아래 '원본'이 위키미디어 공용의 실제 파일 이름.
+  * Korail_ar_incheon_intl_airport_sta_02.jpg  (4447x2281, 2,864,601 bytes)
+    원본    : File:Korail ar incheon int'l airport sta 02.jpg
+              https://commons.wikimedia.org/wiki/File:Korail_ar_incheon_int%27l_airport_sta_02.jpg
+    작성자  : Asacyan (Commons, Own work), 2015-09-23 촬영
+    라이선스: CC BY-SA 4.0  https://creativecommons.org/licenses/by-sa/4.0/
+    설명    : 仁川国際空港駅 KTX・直通列車用改札 (인천국제공항역 KTX·직통열차용 개찰구)
+    (주황색 직통열차 개찰구와 '일반열차 ← · 직통열차 →' 표지판. 앱 직통열차 4단계 '직통열차 개찰구 통과')
+    앱에는 개찰구·표지판 부분만 잘라 넣음: x 1600, y 1010, 가로 1360, 세로 1020(원본 픽셀) → 720x540.
+  * Wongwt_Seoul_Airport_Railroad_16921458087.jpg  (6000x4000, 20,377,758 bytes)
+    원본    : File:Wongwt 首爾機場快鐵 (16921458087).jpg
+              https://commons.wikimedia.org/wiki/File:Wongwt_%E9%A6%96%E7%88%BE%E6%A9%9F%E5%A0%B4%E5%BF%AB%E9%90%B5_(16921458087).jpg
+    작성자  : Wei-Te Wong (Flickr https://www.flickr.com/photos/wongwt/16921458087/ 에서 Commons로 옮김), 2015-04-03 촬영
+    라이선스: CC BY-SA 2.0  https://creativecommons.org/licenses/by-sa/2.0/
+    (인천국제공항역 승강장. 문에 '직통열차 승차위치 3호차', 역명판 '인천국제공항 · 서울역 →'. 앱 직통열차 5단계 '직통열차 승강장에서 탑승')
+- 주의    : 둘 다 2015년 촬영. 2018년 역 이름이 '인천공항1터미널'로 바뀌고 KTX 운행이 끝나 지금 표지판과 다를 수 있음. 출처 표시에 연도를 적음.
+            두 사진 모두 동일조건(SA): 잘라 낸 개찰구 사진(앱 파일)도 CC BY-SA 4.0으로 공개되는 것으로 보고, 출처 표시에 'cropped/잘라냄'을 적음.
+- 표시 예 : "Photo (2015, cropped): Asacyan / Wikimedia Commons · CC BY-SA 4.0"
+            "Photo (2015): Wei-Te Wong / Wikimedia Commons · CC BY-SA 2.0"
+- 찾았지만 쓰지 않은 사진: 한국어 위키백과 '파일:직통열차전용_승강장.JPG'(이경준, 2011, GFDL만 — 앱에 GFDL 전문을 함께 넣어야 해서 뺌),
+            Flickr '인천공항 직통열차 승강장'(kwangchan song, 모든 권리 보유 — 쓸 수 없음).
+
+==================================================================
 앱·발표에 쓸 때
 ==================================================================
 - 앱의 '정보/출처' 화면과 발표 자료 마지막 장에 위 표시 예를 그대로 넣는다.
 - 직접 찍은 사진을 추가하면 이 파일에 '직접 촬영(날짜)'으로 함께 적는다.
 - 2터미널역, 개찰구 근접, 승차권 발매기 화면 등 부족한 장면은 직접 촬영 필요.
+- 2026-10-22 직통열차 개찰구·승강장까지 채워 앱의 모든 단계에 사진이 있다. 다만 2007년·2015년 사진은 지금 현장과 다를 수 있어 현장 사진으로 바꾸는 것이 좋다.

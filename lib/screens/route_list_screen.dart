@@ -8,6 +8,7 @@ import '../state/app_controller.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/offline_message.dart';
 import 'step_guide_screen.dart';
 
 enum _Phase { loading, ready, failed }
@@ -24,6 +25,8 @@ class _RouteListScreenState extends State<RouteListScreen> {
   _Phase _phase = _Phase.loading;
   List<RouteInfo> _routes = const [];
   RepositoryException? _error;
+  int _request = 0;
+  bool _recovering = false; // 연결 끊김에서 시작해 아직 못 읽음: 실패 화면을 AutoRetry로 감싼다
 
   @override
   void initState() {
@@ -37,19 +40,23 @@ class _RouteListScreenState extends State<RouteListScreen> {
     }
   }
 
+  // 요청 번호로 늦게 온 앞 요청의 결과를 버린다([다시 시도]와 자동 다시 읽기가 겹칠 때).
   Future<void> _load({bool force = false}) async {
+    final request = ++_request;
     try {
       final routes = await AppScope.read(context).loadRoutes(force: force);
-      if (!mounted) return;
+      if (!mounted || request != _request) return;
       setState(() {
         _routes = routes;
         _phase = _Phase.ready;
+        _recovering = false;
       });
     } on RepositoryException catch (e) {
-      if (!mounted) return;
+      if (!mounted || request != _request) return;
       setState(() {
         _error = e;
         _phase = _Phase.failed;
+        if (e.code == RepositoryErrorCode.offline) _recovering = true;
       });
     }
   }
@@ -85,21 +92,18 @@ class _RouteListScreenState extends State<RouteListScreen> {
             FocusHeading(
               child: Text(s.loading, style: TextStyle(color: AppColors.of(context).textSecondary)),
             ),
+            SlowConnectionNote(message: s.slowConnection),
             const Gap(AppSpace.section),
             for (var i = 0; i < 3; i++) ...[const SkeletonBox(), const Gap(10)],
           ],
         );
       case _Phase.failed:
-        final offline = _error?.code == RepositoryErrorCode.offline;
+        // 연결 끊김이면 그림과 함께 안내한다. 연결 끊김에서 시작했으면 연결되는 대로 저절로 다시 읽는다(AutoRetry).
+        final Widget message = _error?.code == RepositoryErrorCode.offline
+            ? OfflineMessage(strings: s, onRetry: _retry)
+            : StatusMessage(title: s.loadError, actionLabel: s.retry, onAction: _retry);
         return ScrollColumn(
-          children: [
-            StatusMessage(
-              title: offline ? s.offline : s.loadError,
-              body: offline ? s.offlineSub : null,
-              actionLabel: s.retry,
-              onAction: _retry,
-            ),
-          ],
+          children: [_recovering ? AutoRetry(onRetry: () => _load(force: true), child: message) : message],
         );
       case _Phase.ready:
         if (_routes.isEmpty) {

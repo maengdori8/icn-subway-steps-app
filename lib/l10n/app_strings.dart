@@ -32,6 +32,7 @@ abstract class AppStrings {
   String get loading;
   String get offline;
   String get offlineSub;
+  String get offlineAutoRetry; // [추가] 연결 끊김 안내 맨 아래: 비행기 모드 끄기, 연결되면 자동으로 다시 읽음(2026-10-21 요청)
   String get loadError; // [추가] 원인을 모르는 읽기 실패
   String get empty;
   String get emptySub;
@@ -39,6 +40,7 @@ abstract class AppStrings {
 
   // S02
   String get loadingSteps; // [추가] 단계 목록 불러오는 중
+  String get noSteps; // 단계가 0개인 경로(S02 명세 states)
   String stepOf(int a, int n);
   String get allSteps;
   String get hideSteps;
@@ -71,10 +73,12 @@ abstract class AppStrings {
   String showOld(int n);
   String get hideOld;
   String get tipsLoading;
+  String get myTipsLoading; // [추가] S06 불러오는 중 문구 줄(S06 명세 규칙)
+  String get slowConnection; // [추가] 불러오는 중 8초가 지나면 더하는 줄(UH 시간 초과 규칙)
   String get tipsEmpty;
   String get tipsError;
   String get toggleError;
-  String get forbidden; // 4차 DEC-10 문구
+  String get forbidden; // 권한 설명(10장 결정 2026-10-21) + 다시 로그인 안내(4차 DEC-10)
   String get loginAgain; // [추가] 4차 DEC-10의 다음 행동 버튼
 
   // S03
@@ -92,10 +96,14 @@ abstract class AppStrings {
   String get posted;
   String get postError; // [추가] 올리기 실패(값 유지)
   String get postErrorClosed; // [추가] 화면을 떠난 뒤 올리기 실패(값 없음)
+  String get postUnknown; // [추가] 응답이 없어 올라갔는지 모름(값 유지, 10장)
+  String get checkTips; // [추가] 다시 올리기 전에 그 단계의 팁 목록 확인(10장)
+  String get postFound; // [추가] 확인해 보니 같은 팁이 이미 목록에 있음(이번 요청인지 앞 요청인지 모름, 10장)
   String get sessionEnded; // [추가] 로그인이 끝나 올리지 못함(값 유지)
   String get errRequired;
   String get errLong80;
   String get errLong150;
+  String get errCheckField; // [추가] 서버 400이 거절한 칸인데 앱 규칙으로는 맞는 종류가 없을 때(P01 결정 4)
   String get cfTitle;
   String get cfBody;
   String get cfKeep;
@@ -112,6 +120,23 @@ abstract class AppStrings {
   String get loginError; // [추가] 아이디·비밀번호가 아닌 이유로 실패
   String get errUser;
   String get errPass;
+  // [추가] 회원가입(2026-10-21 요청, 서버 POST /api/auth/signup)
+  String get signUp; // 로그인 화면의 파란 글자 링크·가입 화면 상단 바
+  String get noAccount;
+  String get signUpTitle;
+  String get signUpLead;
+  String get usernameHint;
+  String get passwordHint;
+  String get confirmPass;
+  String get signUpSubmit;
+  String get errUsernameFormat;
+  String get errUsernameTaken;
+  String get errPassShort;
+  String get errPassLong;
+  String get errPassMismatch;
+  String get signUpError;
+  String get signUpUnknown; // 시간 초과: 가입됐는지 모름 → 같은 값으로 로그인해 보기
+  String get signedUp;
   String get showPw;
 
   // S05
@@ -128,10 +153,14 @@ abstract class AppStrings {
   String get setCredits;
   String get creditArrivals; // 4차 DEC-08: 출처 문장을 번역 키로
   String get creditWiki;
+  String get creditTransport;
+  String get creditGate; // 2007년 사진이라 연도를 함께 적는다
+  String get creditExpressGate; // 2015년, 개찰구·표지판 부분만 잘라 넣음
+  String get creditExpressPlatform;
   String get creditLicenseLink;
   String get creditOriginals;
   String get setAbout;
-  String get version;
+  String version({required bool demoData}); // 5차 안(P01 결정 6). 가짜 저장소로 실행할 때만 시연용 데이터를 붙인다
 
   // 하단 메뉴·S06
   String get tabRoutes;
@@ -186,6 +215,8 @@ class _En extends AppStrings {
   @override
   String get offlineSub => "This guide needs the internet. Connect to the airport's free Wi-Fi, then try again.";
   @override
+  String get offlineAutoRetry => "If airplane mode is on, turn it off. We'll load this automatically when you're back online.";
+  @override
   String get loadError => "Couldn't load this. Try again.";
   @override
   String get empty => 'No routes yet';
@@ -196,6 +227,8 @@ class _En extends AppStrings {
 
   @override
   String get loadingSteps => 'Loading steps…';
+  @override
+  String get noSteps => 'No steps yet';
   @override
   String stepOf(int a, int n) => 'Step $a of $n';
   @override
@@ -262,13 +295,18 @@ class _En extends AppStrings {
   @override
   String get tipsLoading => 'Loading tips…';
   @override
+  String get myTipsLoading => 'Loading your tips…';
+  @override
+  String get slowConnection => 'Slow connection. Check the airport Wi-Fi.';
+  @override
   String get tipsEmpty => 'No tips for this step yet.';
   @override
   String get tipsError => "Couldn't load tips. The steps above still work.";
   @override
   String get toggleError => "Couldn't change the status. Try again.";
   @override
-  String get forbidden => "You can't change this tip right now. Log in again, then try.";
+  String get forbidden =>
+      'Only the person who posted this tip can change it. If you logged in with another account, log in again.';
   @override
   String get loginAgain => 'Log in again';
 
@@ -301,6 +339,13 @@ class _En extends AppStrings {
   @override
   String get postErrorClosed => "Your tip couldn't be posted. Please add it again.";
   @override
+  String get postUnknown =>
+      "No reply from the server, so we can't tell if your tip was posted. Check this step's tips before you post again. What you typed is kept.";
+  @override
+  String get checkTips => 'Check tips';
+  @override
+  String get postFound => "Your tip is already in this step's tips.";
+  @override
   String get sessionEnded => 'Your login has ended. Log in again. What you typed is kept.';
   @override
   String get errRequired => 'Enter 1–80 characters.';
@@ -308,6 +353,8 @@ class _En extends AppStrings {
   String get errLong80 => 'Use 80 characters or fewer.';
   @override
   String get errLong150 => 'Use 150 characters or fewer.';
+  @override
+  String get errCheckField => 'Check this field again.';
   @override
   String get cfTitle => 'Discard this tip?';
   @override
@@ -339,6 +386,38 @@ class _En extends AppStrings {
   @override
   String get errPass => 'Enter your password.';
   @override
+  String get signUp => 'Sign up';
+  @override
+  String get noAccount => "Don't have an account?";
+  @override
+  String get signUpTitle => 'Create an account';
+  @override
+  String get signUpLead => 'You need an account to post tips. You can follow the steps without one.';
+  @override
+  String get usernameHint => '4–24 lowercase letters, numbers or _';
+  @override
+  String get passwordHint => '8 or more characters';
+  @override
+  String get confirmPass => 'Confirm password';
+  @override
+  String get signUpSubmit => 'Create account';
+  @override
+  String get errUsernameFormat => 'Use 4–24 lowercase letters, numbers or _.';
+  @override
+  String get errUsernameTaken => 'That username is already taken.';
+  @override
+  String get errPassShort => 'Use 8 or more characters.';
+  @override
+  String get errPassLong => 'That password is too long.';
+  @override
+  String get errPassMismatch => "Passwords don't match.";
+  @override
+  String get signUpError => "Couldn't create your account. Check your connection and try again.";
+  @override
+  String get signUpUnknown => "No reply from the server, so we can't tell if your account was created. Try logging in with it.";
+  @override
+  String get signedUp => "Account created. You're logged in.";
+  @override
   String get showPw => 'Show password';
 
   @override
@@ -368,13 +447,21 @@ class _En extends AppStrings {
   @override
   String get creditWiki => 'Express/All-stop concourse, platform 1·2: MNXANL / Wikimedia Commons · CC BY-SA 4.0';
   @override
+  String get creditTransport => 'Transportation Center: Minseong Kim / Wikimedia Commons · CC BY-SA 4.0';
+  @override
+  String get creditGate => 'All-stop gate (2007): Kanchi1979 / Wikimedia Commons · CC BY 2.5';
+  @override
+  String get creditExpressGate => 'Express gate (2015, cropped): Asacyan / Wikimedia Commons · CC BY-SA 4.0';
+  @override
+  String get creditExpressPlatform => 'Express platform (2015): Wei-Te Wong / Wikimedia Commons · CC BY-SA 2.0';
+  @override
   String get creditLicenseLink => 'License';
   @override
   String get creditOriginals => 'Original photos';
   @override
   String get setAbout => 'About';
   @override
-  String get version => 'Version 1.0.0 · demo data, not connected to a server yet';
+  String version({required bool demoData}) => 'Version 1.0.0 · student project${demoData ? ' · Demo data' : ''}';
 
   @override
   String get tabRoutes => 'Routes';
@@ -436,6 +523,8 @@ class _Ko extends AppStrings {
   @override
   String get offlineSub => '이 안내는 인터넷이 필요해요. 공항 무료 와이파이에 연결한 뒤 다시 시도하세요.';
   @override
+  String get offlineAutoRetry => '비행기 모드라면 꺼 주세요. 인터넷이 다시 연결되면 자동으로 불러와요.';
+  @override
   String get loadError => '불러오지 못했어요. 다시 시도하세요.';
   @override
   String get empty => '아직 경로가 없습니다';
@@ -446,6 +535,8 @@ class _Ko extends AppStrings {
 
   @override
   String get loadingSteps => '단계를 불러오는 중…';
+  @override
+  String get noSteps => '아직 단계가 없습니다';
   @override
   String stepOf(int a, int n) => '$n단계 중 $a단계';
   @override
@@ -512,13 +603,17 @@ class _Ko extends AppStrings {
   @override
   String get tipsLoading => '팁을 불러오는 중…';
   @override
+  String get myTipsLoading => '내 팁을 불러오는 중…';
+  @override
+  String get slowConnection => '연결이 느려요. 공항 와이파이를 확인하세요.';
+  @override
   String get tipsEmpty => '이 단계에는 아직 팁이 없어요.';
   @override
   String get tipsError => '팁을 불러오지 못했어요. 위 안내는 그대로 볼 수 있어요.';
   @override
   String get toggleError => '상태를 바꾸지 못했어요. 다시 시도하세요.';
   @override
-  String get forbidden => '지금은 이 팁을 바꿀 수 없어요. 다시 로그인한 뒤 시도하세요.';
+  String get forbidden => '이 팁은 올린 사람만 바꿀 수 있어요. 다른 계정으로 로그인했다면 다시 로그인하세요.';
   @override
   String get loginAgain => '다시 로그인';
 
@@ -551,6 +646,12 @@ class _Ko extends AppStrings {
   @override
   String get postErrorClosed => '팁을 올리지 못했어요. 다시 등록해 주세요.';
   @override
+  String get postUnknown => '응답이 없어 팁이 올라갔는지 알 수 없어요. 다시 올리기 전에 이 단계의 팁 목록을 확인하세요. 입력한 내용은 그대로 있어요.';
+  @override
+  String get checkTips => '팁 목록 확인';
+  @override
+  String get postFound => '이 단계 팁 목록에 같은 팁이 이미 있어요.';
+  @override
   String get sessionEnded => '로그인이 끝났어요. 다시 로그인하세요. 입력한 내용은 그대로 있어요.';
   @override
   String get errRequired => '1~80자로 입력하세요.';
@@ -558,6 +659,8 @@ class _Ko extends AppStrings {
   String get errLong80 => '80자 이하로 입력하세요.';
   @override
   String get errLong150 => '150자 이하로 입력하세요.';
+  @override
+  String get errCheckField => '이 칸을 다시 확인하세요.';
   @override
   String get cfTitle => '작성 중인 팁을 버릴까요?';
   @override
@@ -588,6 +691,38 @@ class _Ko extends AppStrings {
   @override
   String get errPass => '비밀번호를 입력하세요.';
   @override
+  String get signUp => '회원가입';
+  @override
+  String get noAccount => '계정이 없나요?';
+  @override
+  String get signUpTitle => '계정 만들기';
+  @override
+  String get signUpLead => '팁을 올리려면 계정이 있어야 해요. 길 안내는 계정 없이도 볼 수 있어요.';
+  @override
+  String get usernameHint => '영어 소문자·숫자·밑줄(_) 4~24자';
+  @override
+  String get passwordHint => '8자 이상';
+  @override
+  String get confirmPass => '비밀번호 확인';
+  @override
+  String get signUpSubmit => '가입하기';
+  @override
+  String get errUsernameFormat => '영어 소문자·숫자·밑줄(_)로 4~24자를 입력하세요.';
+  @override
+  String get errUsernameTaken => '이미 쓰고 있는 아이디예요.';
+  @override
+  String get errPassShort => '8자 이상 입력하세요.';
+  @override
+  String get errPassLong => '비밀번호가 너무 길어요.';
+  @override
+  String get errPassMismatch => '비밀번호가 서로 달라요.';
+  @override
+  String get signUpError => '가입하지 못했어요. 연결을 확인하고 다시 시도하세요.';
+  @override
+  String get signUpUnknown => '응답이 없어 가입됐는지 알 수 없어요. 입력한 아이디로 로그인해 보세요.';
+  @override
+  String get signedUp => '가입을 마치고 로그인했어요.';
+  @override
   String get showPw => '비밀번호 보기';
 
   @override
@@ -617,13 +752,21 @@ class _Ko extends AppStrings {
   @override
   String get creditWiki => '직통·일반열차 대합실, 1·2번 승강장: {en|MNXANL / Wikimedia Commons} · CC BY-SA 4.0';
   @override
+  String get creditTransport => '교통센터: {en|Minseong Kim / Wikimedia Commons} · CC BY-SA 4.0';
+  @override
+  String get creditGate => '일반열차 개찰구(2007년): {en|Kanchi1979 / Wikimedia Commons} · CC BY 2.5';
+  @override
+  String get creditExpressGate => '직통열차 개찰구(2015년, 잘라냄): {en|Asacyan / Wikimedia Commons} · CC BY-SA 4.0';
+  @override
+  String get creditExpressPlatform => '직통열차 승강장(2015년): {en|Wei-Te Wong / Wikimedia Commons} · CC BY-SA 2.0';
+  @override
   String get creditLicenseLink => '라이선스';
   @override
   String get creditOriginals => '원본 사진';
   @override
   String get setAbout => '정보';
   @override
-  String get version => '버전 1.0.0 · 시연용 데이터(아직 서버에 연결하지 않음)';
+  String version({required bool demoData}) => '버전 1.0.0 · 학생 실습 프로젝트${demoData ? ' · 시연용 데이터' : ''}';
 
   @override
   String get tabRoutes => '경로';

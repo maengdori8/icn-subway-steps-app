@@ -63,10 +63,19 @@ void main() {
   testWidgets('사진 출처: 표시 문구와 라이선스·원본 주소', (tester) async {
     await pumpApp(tester);
     await openSettings(tester);
-    await scrollTo(tester, find.textContaining('creativecommons.org'));
+    await scrollTo(tester, find.textContaining('Station-Gates.JPG'));
     expect(find.textContaining('인천국제공항공사'), findsOneWidget);
     expect(find.textContaining('MNXANL / Wikimedia Commons'), findsOneWidget);
     expect(find.text('https://creativecommons.org/licenses/by-sa/4.0/'), findsOneWidget);
     expect(find.textContaining('commons.wikimedia.org/wiki/File:202403_AREX'), findsNWidgets(3));
+    // 2026-10-22에 채운 사진 2장: 교통센터(CC BY-SA 4.0), 2007년 일반열차 개찰구(CC BY 2.5)
+    expect(find.textContaining('Minseong Kim / Wikimedia Commons'), findsOneWidget);
+    expect(find.textContaining('All-stop gate (2007): Kanchi1979 / Wikimedia Commons'), findsOneWidget);
+    expect(find.text('https://creativecommons.org/licenses/by/2.5/'), findsOneWidget);
+    // 같은 날 더 채운 직통열차 2장: 개찰구(2015, 잘라냄, CC BY-SA 4.0), 승강장(2015, CC BY-SA 2.0)
+    expect(find.textContaining('Express gate (2015, cropped): Asacyan / Wikimedia Commons'), findsOneWidget);
+    expect(find.textContaining('Express platform (2015): Wei-Te Wong / Wikimedia Commons'), findsOneWidget);
+    expect(find.text('https://creativecommons.org/licenses/by-sa/2.0/'), findsOneWidget);
+    expect(find.textContaining('commons.wikimedia.org/wiki/File:'), findsNWidgets(7));
   });
 }

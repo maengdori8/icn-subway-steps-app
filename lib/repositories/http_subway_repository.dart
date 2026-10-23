@@ -40,8 +40,8 @@ class ApiResponse {
   final List<int> bodyBytes; // UTF-8로 읽는다(utf8.decode)
 }
 
-// 실제 전송. 10장에서 http 패키지(승인 후)로 구현해 HttpSubwayRepository(transport: ...)에 넣는다.
-// 연결 실패(SocketException 등)는 구현 안에서 RepositoryException(RepositoryErrorCode.offline)으로 바꾼다.
+// 실제 전송. 구현은 HttpApiTransport(http_api_transport.dart)이고 main.dart가 HttpSubwayRepository(transport: ...)에 넣는다.
+// 연결 실패·시간 초과는 구현 안에서 RepositoryException(offline 또는 server)으로 바꾼다.
 abstract class ApiTransport {
   Future<ApiResponse> send(Uri uri, ApiRequest request);
 }
@@ -50,10 +50,11 @@ class _NotConnectedTransport implements ApiTransport {
   const _NotConnectedTransport();
 
   @override
-  Future<ApiResponse> send(Uri uri, ApiRequest request) async => throw UnimplementedError('10장에서 연결: $request ($uri)');
+  Future<ApiResponse> send(Uri uri, ApiRequest request) async => throw UnimplementedError('전송을 넣지 않음: $request ($uri)');
 }
 
-// 실제 API 저장소. 경로·본문 만들기와 응답·오류 읽기는 끝났고, 전송(ApiTransport)만 10장에서 붙인다.
+// 실제 API 저장소. 경로·본문 만들기와 응답·오류 읽기를 맡고, 전송은 넣어 준 ApiTransport가 한다
+// (전송을 넣지 않으면 요청을 보내지 않는다: 검사용 기본값).
 // - 공개 GET이라도 무효·만료 토큰을 붙이면 401이다. 화면은 unauthorized를 받으면 다시 로그인으로 보낸다.
 // - 오류 본문 {code, message, errors}는 RepositoryException.fromErrorResponse가 읽는다(message는 한국어뿐이라 화면에 쓰지 않음).
 class HttpSubwayRepository implements SubwayRepository {
@@ -125,5 +126,12 @@ class HttpSubwayRepository implements SubwayRepository {
   Future<UserSession> login(String username, String password) => _read(
     ApiRequest('POST', '/api/auth/login', body: {'username': username, 'password': password}),
     UserSession.fromLoginJson,
+  );
+
+  // 가입에도 토큰을 붙이지 않는다. 응답 User의 모양(id·username)만 확인한다.
+  @override
+  Future<void> signup(String username, String password) => _read(
+    ApiRequest('POST', '/api/auth/signup', body: {'username': username, 'password': password}),
+    (json) => (json['id'] as int, json['username'] as String),
   );
 }

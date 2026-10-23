@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -142,14 +144,26 @@ class NoticeBox extends StatelessWidget {
   }
 }
 
-// 가운데 안내(빈 목록·오프라인·읽기 실패·로그인 필요). 아이콘 없이 제목·설명·버튼만(statusMessage).
+// 가운데 안내(빈 목록·오프라인·읽기 실패·로그인 필요). 제목·설명·버튼(statusMessage).
+// 연결 끊김만 위에 그림을, 버튼 아래에 한 줄 메모를 더한다(OfflineMessage, 2026-10-21 사용자 요청).
 class StatusMessage extends StatelessWidget {
-  const StatusMessage({super.key, this.title, this.body, this.actionLabel, this.onAction, this.focusTitle = true});
+  const StatusMessage({
+    super.key,
+    this.image,
+    this.title,
+    this.body,
+    this.actionLabel,
+    this.onAction,
+    this.note,
+    this.focusTitle = true,
+  });
 
+  final Widget? image;
   final String? title;
   final String? body;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? note; // 버튼 아래 작은 안내(예: 연결되면 자동으로 불러옴)
   final bool focusTitle;
 
   @override
@@ -159,6 +173,7 @@ class StatusMessage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 10),
       child: Column(
         children: [
+          if (image != null) ...[image!, const SizedBox(height: AppSpace.section)],
           if (title != null) ...[
             FocusHeading(
               autofocus: focusTitle,
@@ -179,6 +194,14 @@ class StatusMessage extends StatelessWidget {
           if (actionLabel != null) ...[
             const SizedBox(height: 16),
             FilledButton(onPressed: onAction, child: Text(actionLabel!)),
+          ],
+          if (note != null) ...[
+            const SizedBox(height: AppSpace.card),
+            Text(
+              note!,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 14, color: c.textSecondary),
+            ),
           ],
         ],
       ),
@@ -205,15 +228,60 @@ class SkeletonBox extends StatelessWidget {
   );
 }
 
+// 불러오는 중이 8초를 넘으면 문구 아래에 '느린 연결' 한 줄을 더한다(UH 시간 초과 규칙, CR 불러오는 중 규칙).
+// 불러오는 중 화면에만 두므로 응답이 오거나 화면을 떠나면 이 위젯과 함께 사라지고 타이머도 정리된다.
+// 같은 자리에서 요청을 새로 보내면 key(요청 번호)를 바꿔 8초를 다시 센다.
+class SlowConnectionNote extends StatefulWidget {
+  const SlowConnectionNote({super.key, required this.message, this.style});
+
+  static const after = Duration(seconds: 8);
+
+  final String message;
+  final TextStyle? style; // 위 불러오는 중 문구와 같은 모양(주지 않으면 textSecondary 본문)
+
+  @override
+  State<SlowConnectionNote> createState() => _SlowConnectionNoteState();
+}
+
+class _SlowConnectionNoteState extends State<SlowConnectionNote> {
+  late final Timer _timer;
+  bool _slow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer(SlowConnectionNote.after, () {
+      if (mounted) setState(() => _slow = true);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_slow) return const SizedBox.shrink();
+    return Semantics(
+      liveRegion: true,
+      child: Text(widget.message, style: widget.style ?? TextStyle(color: AppColors.of(context).textSecondary)),
+    );
+  }
+}
+
 // 화면 본문 스크롤. ListView(지연 생성)를 쓰지 않는 이유: 스크롤로 제목이 다시 만들어지면
 // 제목 초점(FocusHeading)이 다시 걸려 사용자가 있던 곳에서 초점을 빼앗기 때문.
 class ScrollColumn extends StatelessWidget {
-  const ScrollColumn({super.key, required this.children});
+  const ScrollColumn({super.key, required this.children, this.controller});
 
   final List<Widget> children;
+  final ScrollController? controller; // 본문을 맨 위로 올려야 하는 화면(S02 단계 이동 등)이 넘긴다
 
   @override
   Widget build(BuildContext context) => SingleChildScrollView(
+    controller: controller,
     padding: const EdgeInsets.all(AppSpace.page),
     child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
   );

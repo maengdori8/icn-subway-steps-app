@@ -4,8 +4,10 @@ import '../models/route_info.dart';
 import '../models/tip.dart';
 import '../repositories/subway_repository.dart';
 import '../state/app_controller.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/common.dart';
+import '../widgets/offline_message.dart';
 import '../widgets/tip_card.dart';
 import 'login_screen.dart';
 import 'tip_status_actions.dart';
@@ -30,6 +32,7 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
   RepositoryException? _error;
   int? _loadedFor; // 어느 사용자의 목록인지. 로그인·로그아웃하면 다시 읽는다
   int _request = 0;
+  bool _recovering = false; // 연결 끊김에서 시작해 아직 못 읽음: 실패 화면을 AutoRetry로 감싼다
 
   @override
   void didChangeDependencies() {
@@ -38,6 +41,7 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
     if (userId != _loadedFor) {
       _loadedFor = userId;
       _phase = _Phase.loading;
+      _recovering = false;
       _tips = const [];
       busyTips.clear();
       tipNotices.clear();
@@ -45,7 +49,8 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
     }
   }
 
-  Future<void> _load() async {
+  // [quiet]: 보이는 목록을 두고 다시 읽는다(상태 변경 뒤 재조회). 실패하면 보이는 목록을 그대로 둔다.
+  Future<void> _load({bool quiet = false}) async {
     final app = AppScope.read(context);
     final session = app.session;
     if (session == null) return;
@@ -59,6 +64,7 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
       setState(() {
         _tips = tips;
         _phase = _Phase.ready;
+        _recovering = false;
       });
     } on RepositoryException catch (e) {
       if (!mounted || request != _request) return;
@@ -67,9 +73,11 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
         app.showMessage((s) => s.loggedOut);
         return;
       }
+      if (quiet && _phase == _Phase.ready) return;
       setState(() {
         _error = e;
         _phase = _Phase.failed;
+        if (e.code == RepositoryErrorCode.offline) _recovering = true;
       });
     }
   }
@@ -84,6 +92,9 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
 
   @override
   void applyUpdatedTip(Tip updated) => _tips = [for (final t in _tips) t.id == updated.id ? updated : t];
+
+  @override
+  void reloadTipsQuietly() => _load(quiet: true);
 
   @override
   Widget build(BuildContext context) {
@@ -106,24 +117,22 @@ class _MyTipsScreenState extends State<MyTipsScreen> with TipStatusActions<MyTip
     }
     switch (_phase) {
       case _Phase.loading:
+        // 다른 화면처럼 문구 한 줄이 상태를 알린다(S06 명세 규칙). 자리표시는 낭독에서 뺀다. 초점은 상단 바 제목.
+        final secondary = TextStyle(color: AppColors.of(context).textSecondary);
         return ScrollColumn(
           children: [
+            Semantics(liveRegion: true, child: Text(s.myTipsLoading, style: secondary)),
+            SlowConnectionNote(key: ValueKey(_request), message: s.slowConnection, style: secondary),
+            const Gap(AppSpace.section),
             for (var i = 0; i < 2; i++) ...[const SkeletonBox(height: 120, radius: 12), const Gap(10)],
           ],
         );
       case _Phase.failed:
-        final offline = _error?.code == RepositoryErrorCode.offline;
-        return ScrollColumn(
-          children: [
-            StatusMessage(
-              title: offline ? s.offline : s.loadError,
-              body: offline ? s.offlineSub : null,
-              actionLabel: s.retry,
-              focusTitle: false,
-              onAction: _retry,
-            ),
-          ],
-        );
+        // 연결 끊김이면 그림과 함께 안내한다. 연결 끊김에서 시작했으면 연결되는 대로 저절로 다시 읽는다(AutoRetry).
+        final Widget message = _error?.code == RepositoryErrorCode.offline
+            ? OfflineMessage(strings: s, focusTitle: false, onRetry: _retry)
+            : StatusMessage(title: s.loadError, actionLabel: s.retry, focusTitle: false, onAction: _retry);
+        return ScrollColumn(children: [_recovering ? AutoRetry(onRetry: _load, child: message) : message]);
       case _Phase.ready:
         if (_tips.isEmpty) return ScrollColumn(children: [StatusMessage(body: s.myTipsEmpty)]);
         return ScrollColumn(

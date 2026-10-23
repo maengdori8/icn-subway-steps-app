@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 10장: 내 서버 연결. debug·profile 매니페스트에만 있던 권한을 release 빌드에도 둔다(교재 10장 7.2, 2026-10-21 사용자 결정). -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="icn_subway_app"
         android:name="${applicationName}"

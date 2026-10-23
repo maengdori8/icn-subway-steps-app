@@ -1,21 +1,56 @@
 {
   "schemaVersion": "1.0",
-  "designId": "icn-subway-steps-navy-v01",
+  "designId": "icn-subway-steps-navy-v03",
   "evidence": {
     "kind": "student-ai-draft",
-    "label": "Claude Code(artifact-design 스킬)로 만든 HTML 시안에서 정리한 값. 사용자가 1~4단계를 확인함.",
-    "selectedVariant": "docs/screens/ICN-subway-steps-v01.html의 남색 표지판 + 주황(직통)·파랑(일반) 시안, 밝은 테마 기준.",
+    "label": "시안 v03(2026-10-20 고정)에서 출발해 실제 Flutter 앱(C:\\dev\\projects\\icn_subway_app) 코드로 다시 맞춘 값. 시안과 앱이 다르면 앱과 사용자 결정(ui-validation-decisions.md)이 기준이다.",
+    "selectedVariant": "docs/screens/ICN-subway-steps-v03.src.html의 남색 표지판 + 주황(직통)·파랑(일반) 시안. 밝게·어둡게 두 테마.",
+    "baseline": "디자인 기준 = 이 폴더의 문서 + 실제 Flutter 앱. 시안 v03은 2026-10-20 상태로 고정하고 더 고치지 않는다. 시안과 다르게 둔 것은 앱 docs/handoff.md '시안과 다르게 둔 것' 표에 있다.",
     "revision": {
-      "version": "v01",
-      "date": "2026-10-20",
+      "version": "v03-sync",
+      "date": "2026-10-21",
       "changes": [
-        "직통열차 강조색 #C25A00 → #B35300 (흰 글자 대비 4.42:1 → 5.06:1, WCAG 1.4.3 본문 4.5:1)",
-        "경로 구분색: 직통 #B35300, 일반 #0B6FA8(흰 글자 5.45:1). 현재 키 구조에 경로색 전용 키가 없어 components.itemCard에 값으로 기록함(openQuestions 참고)",
-        "상태 배지를 '확인됨 / 정보 오래됨' 두 가지로 정의. 정보 오래됨은 #8A5A00 on #FFF4D6(5.41:1)",
-        "v03 하단 메뉴 추가(경로·내 팁·설정, 최상위 화면에서만). 상단 지구본 언어 버튼과 톱니바퀴 제거 — 언어·테마는 설정에서만 바꿈(사용자 결정). 내 팁(S06) 화면 신설",
-        "v02 언어 전환: EN/한국어 알약 토글(높이 32, 표기 불일치) → 지구본 버튼(48×48)+언어 목록 시트. v03에서 사용자 결정으로 제거",
-        "v02 Codex 반박 반영: 역할 토큰 signage·onSignage·routeExpress·routeLocal·onRoute·warningSurface·warningText를 colors·colorsDark에 추가, divider를 CSS 실제 값(#D4D8E0 / #313C4E)과 일치, placeholder 색 지정",
-        "v02 다크 모드: tokens.colorsDark 추가(colors와 같은 키). 어두운 테마의 경로 버튼은 흰 글자 대신 #10141C 글자(직통 #FF9B45 8.80:1, 일반 #5CB8F0 8.40:1), 주요 행동 버튼은 #9DC1FF 바탕·#0A0F18 글자(10.51:1). 시스템/밝게/어둡게 선택은 S01 하단 '화면 테마'"
+        "기준을 '시안 v01'에서 '이 문서 + Flutter 앱'으로 바꿈. 시안 v03은 2026-10-20 상태로 고정",
+        "테마(시스템·밝게·어둡게)와 언어(English·한국어)는 S05 설정에서만 바꿈. 지구본 버튼은 어디에도 없음. 옛 기록 'S01 화면 테마', '언어는 상단과 설정 양쪽'은 폐기",
+        "하단 메뉴(경로 S01 / 내 팁 S06 / 설정 S05)는 최상위 화면에만. S02~S04에는 없음",
+        "S04 비밀번호 칸 안 오른쪽 끝 눈 아이콘, S05 설정·S06 내 팁 규칙을 screenRules에 추가",
+        "배지 문구를 '작성자 확인 · 날짜' / '작성자가 오래됨 표시 · 날짜' / 채운 'Example' 배지로 고침(옛 '확인됨·정보 오래됨', '테두리만 있는 예시 배지' 삭제)",
+        "T2는 누를 수 있는 카드 + '준비 중' 배지, 누르면 하단 알림만(옛 '누를 수 없는 상태' 삭제)",
+        "마지막 버튼 '승강장에 왔어요', 완료 화면은 승차권 보관 한 줄 + 'n단계 다시 보기' + '경로 목록으로'(옛 '도착했어요' 삭제)",
+        "확인창 규칙: S03 작성 중 나가기에만 쓰고 안전한 쪽('계속 쓰기')이 주요 버튼·처음 초점",
+        "components를 Flutter 위젯 이름과 함께 다시 씀: 표지판 칩+역할 라벨, 진행 표시, 하단 고정 이전·다음 바, 하단 메뉴, 확인창, 팁 카드, 배지 변형, 화면 안 알림, 하단 알림(SnackBar) 등",
+        "typography에 Flutter 실제 값 추가: appBarTitle·doneTitle·statusTitle·dialogTitle·stepNumber·stepNumberTotal·routeName·signKo·signEn·roleLabel·eyebrow·support·small·errorText·badge·navLabel·snackBar·optionLanguage·optionSegment",
+        "spacing.gutter, radii.sign·box·dialog, sizes.buttonHeight·navBarHeight·routeCardMinHeight·optionRowHeight 추가",
+        "오프라인 문구를 공항 무료 와이파이 안내로, 원인 모를 실패 문구(loadError)를 확정",
+        "하단 알림 시간 3초로 통일(옛 '약 2초' 삭제). motion 항목 추가",
+        "sourceFiles를 v03.src.html과 Flutter 앱으로 바꿈. tokenEvidence에 색 20개 전체 대응표",
+        "2026-10-22 사용자 요청(ui-validation-decisions.md D14~D16, 앱은 위젯 검사 통과·화면 대조 전): 상단 바를 surface 바탕·textPrimary 굵은 제목 가운데로(signage는 표지판 칩에만), 하단 메뉴를 떠 있는 둥근 캡슐(FloatingTabBar)로 바꾸고 선택 칸 움직임(motion.tabIndicator)과 사진 입체 넘김(motion.photoPaging)을 적음"
+      ],
+      "history": [
+        {
+          "version": "v03",
+          "date": "2026-10-20",
+          "changes": [
+            "하단 메뉴 추가(경로·내 팁·설정, 최상위 화면에서만). 상단 지구본 언어 버튼과 톱니바퀴 제거. 내 팁(S06) 신설"
+          ]
+        },
+        {
+          "version": "v02",
+          "date": "2026-10-20",
+          "changes": [
+            "역할 토큰 signage·onSignage·routeExpress·routeLocal·onRoute·warningSurface·warningText 추가, divider를 CSS 값과 일치, placeholder 색 지정",
+            "다크 모드 tokens.colorsDark 추가(colors와 같은 키). 어두운 테마 경로 버튼 글자 #10141C, 주요 버튼 #9DC1FF 바탕·#0A0F18 글자",
+            "(폐기) 언어 전환을 지구본 버튼+언어 시트로, 테마 선택을 S01 하단에 둔다는 내용은 v03·v03-sync에서 폐기"
+          ]
+        },
+        {
+          "version": "v01",
+          "date": "2026-10-20",
+          "changes": [
+            "직통열차 강조색 #C25A00 → #B35300(흰 글자 대비 5.06:1)",
+            "경로 구분색: 직통 #B35300, 일반 #0B6FA8(흰 글자 5.45:1)"
+          ]
+        }
       ]
     }
   },
@@ -24,7 +59,8 @@
     "flutter": "logicalPixel",
     "color": "#RRGGBB",
     "lineHeight": "fontSize의 배수",
-    "note": "물리 픽셀 수를 뜻하지 않는다. 웹 수치는 출발점이며 글꼴·배율·콘텐츠에 따라 Flutter에서 다시 확인한다."
+    "letterSpacing": "논리 픽셀",
+    "note": "typography의 title·section·body·label·button·caption 6개는 시안 CSS 값이고 Flutter에서 바꾼 값은 flutterAdaptations.typography에 있다. v03-sync에서 더한 typography 키와 spacing·radii·sizes의 새 키는 Flutter 앱의 실제 값이다(시안 값이 다르면 tokenEvidence에 적음). 물리 픽셀 수를 뜻하지 않는다."
   },
   "tokens": {
     "colors": {
@@ -99,116 +135,393 @@
         "fontSize": 12,
         "fontWeight": 400,
         "lineHeight": 1.5
+      },
+      "appBarTitle": {
+        "fontSize": 21,
+        "fontWeight": 700
+      },
+      "doneTitle": {
+        "fontSize": 26,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "statusTitle": {
+        "fontSize": 20,
+        "fontWeight": 700
+      },
+      "dialogTitle": {
+        "fontSize": 26,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "stepNumber": {
+        "fontSize": 24,
+        "fontWeight": 700,
+        "lineHeight": 1
+      },
+      "stepNumberTotal": {
+        "fontSize": 15,
+        "fontWeight": 700,
+        "lineHeight": 1
+      },
+      "routeName": {
+        "fontSize": 18,
+        "fontWeight": 700,
+        "lineHeight": 1.2
+      },
+      "signKo": {
+        "fontSize": 21,
+        "fontWeight": 700,
+        "lineHeight": 1.25
+      },
+      "signEn": {
+        "fontSize": 21,
+        "fontWeight": 600,
+        "lineHeight": 1.25
+      },
+      "roleLabel": {
+        "fontSize": 14,
+        "fontWeight": 600,
+        "letterSpacing": 0.8
+      },
+      "eyebrow": {
+        "fontSize": 12,
+        "fontWeight": 600,
+        "letterSpacing": 1.2
+      },
+      "support": {
+        "fontSize": 14,
+        "fontWeight": 400
+      },
+      "small": {
+        "fontSize": 13,
+        "fontWeight": 400
+      },
+      "errorText": {
+        "fontSize": 13,
+        "fontWeight": 500
+      },
+      "badge": {
+        "fontSize": 12,
+        "fontWeight": 600
+      },
+      "navLabel": {
+        "fontSize": 12,
+        "fontWeight": 500
+      },
+      "snackBar": {
+        "fontSize": 16,
+        "fontWeight": 700
+      },
+      "optionLanguage": {
+        "fontSize": 17,
+        "fontWeight": 500
+      },
+      "optionSegment": {
+        "fontSize": 15,
+        "fontWeight": 500
       }
     },
     "spacing": {
       "page": 18,
       "fieldGap": 6,
       "section": 16,
-      "card": 12
+      "card": 12,
+      "gutter": 10
     },
     "radii": {
       "button": 12,
       "input": 10,
       "card": 14,
       "hero": 14,
-      "chip": 999
+      "chip": 999,
+      "sign": 10,
+      "box": 12,
+      "dialog": 18
     },
     "sizes": {
       "inputHeight": 48,
-      "appBarHeight": 56
+      "appBarHeight": 56,
+      "buttonHeight": 52,
+      "navBarHeight": 68,
+      "routeCardMinHeight": 88,
+      "optionRowHeight": 56
     }
+  },
+  "screenRules": {
+    "screens": "S01 경로 목록, S02 단계 안내, S03 팁 등록, S04 로그인, S05 설정, S06 내 팁, S07 회원가입(2026-10-21 추가). 화면별 상세는 S02~S07-screen-spec.md.",
+    "onlineOnly": "온라인 전용. 경로·단계·팁 모두 서버에서 받는다. 연결 끊김이 확인되면 'You're offline / 인터넷에 연결되지 않았습니다' + 공항 무료 와이파이 안내 + 다시 시도. 현재 동작(고도화, 위젯 검사 통과·화면 대조 전): 연결 끊김 안내에는 그림(components.statusMessage)이 있고, 떠 있는 동안 3초마다·앱으로 돌아올 때 다시 읽어 연결되면 저절로 화면을 보인다(AutoRetry).",
+    "themeAndLanguage": "테마(시스템·밝게·어둡게)와 언어(English·한국어)는 S05 설정에서만 바꾼다. 상단 바·S01·S02 어디에도 언어·테마 버튼(지구본·톱니)이 없다. 둘 다 기기에 기억하고, 기본값은 시스템 테마·English. 언어를 바꿔도 표지판 글자(한·영 병기)는 그대로다.",
+    "bottomNav": "하단 메뉴(경로 S01 / 내 팁 S06 / 설정 S05)는 최상위 화면에만 보인다. S02·S03·S04는 그 위에 쌓여 메뉴를 가린다(S02는 하단 고정 이전·다음 바가 대신함). 메뉴가 보이는 화면에는 뒤로 가기 버튼이 없다. 동작 규칙은 components.bottomNav.",
+    "passwordToggle": "S04 비밀번호 칸 안 오른쪽 끝에 눈 아이콘(보이기·숨기기). components.passwordToggle.",
+    "signup": "S04 버튼 줄 아래 'Don't have an account? / 계정이 없나요?' + 파란 링크 버튼 'Sign up / 회원가입'(TextButton, 링크색) → S07 회원가입(아이디·비밀번호·비밀번호 확인, 서버 규칙: 아이디 ^[a-z0-9_]{4,24}$, 비밀번호 8자 이상·UTF-8 72바이트 이하). 가입하면 S04로 돌아와 같은 값으로 바로 로그인하고 들어온 목적대로 이어진다. 현재 동작(고도화, 위젯 검사 통과·화면 대조 전). S07-screen-spec.md.",
+    "badgeText": "팁 배지: 'Checked by author · YYYY-MM-DD / 작성자 확인 · YYYY-MM-DD', 'Marked out of date by author · YYYY-MM-DD / 작성자가 오래됨 표시 · YYYY-MM-DD'(날짜는 verifiedAt의 서울 날짜), 예시 팁은 채운 'Example / 예시' 배지 하나만. 작성자 표시: 예시 팁 'Sample / 샘플', 내 팁 'by you / 내가 올림', 다른 사람 팁 'by a traveler / 여행객'.",
+    "t2": "T2는 S01의 'From T2 arrivals / T2 입국장에서 출발' 묶음에 누를 수 있는 카드로 둔다. 띠는 outline 색, 'Coming soon / 준비 중' 배지(warningSurface·warningText), 설명 'T2 directions are coming soon. / T2 안내는 준비 중입니다.', 단계 수는 보이지 않는다. 누르면 같은 문구의 하단 알림만 띄우고 S01에 머문다.",
+    "guideEnd": "안내 종료점은 공항철도 탑승(승강장 도착). 마지막 단계의 다음 버튼은 'I'm on the platform / 승강장에 왔어요'. 완료 화면: 제목 'You're at the platform / 승강장에 도착했어요', 한 줄 'Keep your ticket or card until you exit at Seoul Station. / 서울역에서 나갈 때까지 승차권·교통카드를 보관하세요.', 버튼 'Back to routes / 경로 목록으로'(보조) : 'Step n again / n단계 다시 보기'(경로색) = 1:1.",
+    "elevator": "엘리베이터 위치는 서버 elevator가 null이면 'Elevator: being checked on site / 엘리베이터: 현장 확인 중' 자리만 둔다. 별도 경로 선택은 만들지 않는다.",
+    "confirmDialog": "확인창은 되돌릴 수 없는 입력 손실에만 쓴다. 지금은 S03 작성 중 나가기 하나다. 로그아웃·테마·언어·상태 바꾸기·S04 취소에는 쓰지 않는다(바로 되돌릴 수 있음). components.confirmDialog.",
+    "settings": "S05: 화면 테마 3칸, 언어 두 줄, 계정(로그인됨 '…(으)로 로그인됨' + 로그아웃 / 로그인 전 안내 + 로그인), 사진 출처·라이선스(주소는 선택·복사 가능한 글자), 정보(버전).",
+    "myTips": "S06: 로그인 전이면 로그인 안내와 [로그인]. 로그인 후 내 팁 목록(GET /api/me/tips, 예시 팁 제외), 카드마다 상태 바꾸기와 '이 단계 보기'."
   },
   "components": {
     "primaryButton": {
-      "background": "colors.primary (팁 올리기·로그인·다시 시도). S02의 '다음'만 경로색 colors.routeExpress / colors.routeLocal ('이전'은 secondaryButton)",
-      "foreground": "colors.onPrimary (경로색 버튼은 colors.onRoute). 두 테마 모두 같은 키를 쓰고 값은 colors / colorsDark에서 고른다",
+      "flutter": "FilledButton (app_theme.dart filledButtonTheme)",
+      "use": "한 화면의 주요 행동: 팁 올리기(S03), 로그인(S04), 다시 시도(StatusMessage), 확인창 '계속 쓰기'",
+      "background": "colors.primary",
+      "foreground": "colors.onPrimary",
       "typography": "typography.button",
       "radius": "radii.button",
-      "width": "가용 너비 (S02에서는 이전 1 : 다음 1.4 비율)",
-      "states": [
-        "기본",
-        "처리 중",
-        "누를 수 없음"
-      ],
-      "behavior": "팁 올리는 중에는 '올리는 중…'으로 바꾸고 중복 누름을 막는다. 첫 단계의 '이전'은 누를 수 없음, 마지막 단계의 '다음'은 '도착했어요'로 바뀐다."
+      "minHeight": "sizes.buttonHeight",
+      "states": {
+        "default": "primary 바탕",
+        "processing": "S03 '올리는 중…' 문구 + 누를 수 없음, S04 글자 앞 16 크기 원형 진행 표시 + 누를 수 없음",
+        "disabled": "primary 45% 바탕 · onPrimary 글자"
+      },
+      "behavior": "S03·S04 버튼 줄은 왼쪽 보조(취소) : 오른쪽 주요 = 1 : 1.4. 처리 중에는 중복 누름을 막는다."
     },
-    "secondaryButton": {
-      "style": "연한 배경 버튼(colors.surfaceContainer) · 텍스트 버튼(+ 팁 등록, 상태 바꾸기)",
+    "routeButton": {
+      "flutter": "RouteButton / routeButtonStyle (step_widgets.dart, app_theme.dart)",
+      "use": "S02 '다음'·'승강장에 왔어요', 완료 화면 'n단계 다시 보기'",
+      "background": "colors.routeExpress 또는 colors.routeLocal(경로에 따라)",
+      "foreground": "colors.onRoute",
+      "typography": "typography.button",
+      "radius": "radii.button",
+      "minHeight": "sizes.buttonHeight",
+      "states": {
+        "default": "경로색 바탕",
+        "disabled": "경로색 45% 바탕"
+      },
+      "behavior": "경로색 위 글자는 반드시 같은 테마의 onRoute. 남색 primary 버튼과 섞지 않는다."
+    },
+    "ghostButton": {
+      "flutter": "FilledButton + ghostButtonStyle (app_theme.dart)",
+      "use": "보조 행동: 이전, 취소(S03·S04), 경로 목록으로(완료 화면), 확인창 '버리기'",
+      "background": "colors.surfaceContainer",
       "foreground": "colors.textPrimary",
-      "typography": "typography.label",
-      "minHeight": "flutterAdaptations.sizes.minimumTap",
-      "labels": [
-        "이전",
-        "취소",
-        "+ 팁 등록"
-      ],
-      "behavior": "S03·S04의 취소는 들어오기 전 S02의 같은 단계로 돌아간다. 작성 중 내용 처리 방식은 미정이므로 ui-handoff.md의 질문을 따른다."
+      "typography": "typography.button",
+      "radius": "radii.button",
+      "minHeight": "sizes.buttonHeight",
+      "states": {
+        "default": "surfaceContainer 바탕",
+        "disabled": "surfaceContainer 60% 바탕 · textPrimary 45% 글자(첫 단계의 '이전')"
+      }
+    },
+    "textButton": {
+      "flutter": "TextButton (app_theme.dart textButtonTheme)",
+      "use": "+ 팁 등록, 전체 단계/단계 접기, 처음부터, 지난 팁 n개 보기/접기, 상태 바꾸기, 이 단계 보기, S05 로그인·로그아웃, 알림 상자 안 다시 시도·다시 로그인",
+      "foreground": "colors.routeLocal (알림 상자 안에서는 그 상자의 글자색 + 밑줄)",
+      "disabledForeground": "colors.textSecondary",
+      "typography": "14 / 700",
+      "minSize": "48 × 48",
+      "behavior": "펼침 버튼(전체 단계, 지난 팁)은 펼침 상태를 낭독에 알린다(Semantics expanded)."
     },
     "textField": {
+      "flutter": "LabeledField (labeled_field.dart) + inputDecorationTheme",
       "text": "colors.textPrimary",
-      "border": "colors.outline",
-      "errorText": "colors.error",
-      "errorBorder": "colors.errorBorder",
+      "background": "colors.surface (읽기 전용이면 colors.surfaceContainer)",
+      "border": "colors.outline 1.5, 초점 colors.primary 2",
+      "errorText": "colors.error · typography.errorText, 최대 3줄",
+      "errorBorder": "colors.errorBorder 1.5(초점 2)",
+      "placeholder": "colors.textSecondary 불투명도 1, 16",
+      "counter": "12 · colors.textSecondary, 최대 글자를 넘으면 colors.error · 700",
       "radius": "radii.input",
+      "padding": 12,
       "labelStyle": "typography.label",
-      "states": [
-        "기본",
-        "입력됨",
-        "입력 오류",
-        "처리 중"
-      ],
-      "behavior": "라벨 위·입력칸·아래 줄(왼쪽 오류 문구, 오른쪽 글자 수 n/80 또는 n/150). 제목·위치는 앞뒤 공백 제거 후 1~80자, 메모는 선택 150자 이하. 오류 시 다른 입력값을 유지하고, 고치기 시작하면 그 칸의 오류를 지운다. S03의 단계 칸은 읽기 전용.",
-      "placeholder": "colors.textSecondary",
-      "helperText": "colors.textSecondary"
+      "states": {
+        "default": "빈 칸 + 예시 글자",
+        "filled": "입력됨",
+        "error": "빨간 테두리 + 칸 아래 문구",
+        "readOnly": "S03 올리는 중(값이 조용히 버려지지 않게)"
+      },
+      "behavior": "라벨 위 · 입력칸 · 아래 줄(왼쪽 오류 문구, 오른쪽 글자 수 n/80 또는 n/150). 글자 수는 앞뒤 공백을 뺀 뒤 유니코드 코드 포인트로 센다(서버와 같음). 글자 수를 넘겨도 입력은 막지 않고 올리기 때 오류. 고치기 시작하면 그 칸의 오류만 지운다. 보이는 라벨은 낭독에서 빼고 입력칸에 같은 이름을 붙인다."
     },
-    "itemCard": {
+    "passwordToggle": {
+      "flutter": "IconButton (LabeledField suffix, login_screen.dart·signup_screen.dart)",
+      "position": "S04·S07 비밀번호 칸 안 오른쪽 끝(S07은 두 비밀번호 칸을 함께 보이기·숨기기)",
+      "icon": "Icons.visibility_outlined(숨김 상태) ↔ Icons.visibility_off_outlined(보이는 상태), 색 colors.textSecondary",
+      "minSize": "48 × 48",
+      "behavior": "누르면 비밀번호 보이기·숨기기. 낭독 이름은 'Show password / 비밀번호 보기'로 고정하고 눌림(선택) 상태로 알린다. 누른 뒤에도 초점은 이 버튼에 남는다."
+    },
+    "signChip": {
+      "flutter": "SignChip (step_widgets.dart)",
+      "roleLabel": "typography.roleLabel · colors.textPrimary · 대문자. 'YOU ARE HERE / 현재 위치'(role HERE) 또는 'LOOK FOR THIS SIGN / 이 표지판을 찾으세요'(role FIND)",
+      "chip": "colors.signage 바탕 · colors.onSignage 글자 · onSignage 22% 테두리 · radii.sign · 안쪽 여백 가로 14 세로 10",
+      "content": "픽토그램(비행기·에스컬레이터·열차, 26) + 한글 typography.signKo + 영어 typography.signEn(불투명). 서버 sign.ko·sign.en",
+      "behavior": "언어와 관계없이 한·영 병기. 각 조각에 언어를 달아 그 언어 목소리로 읽힌다. 라벨과 칩은 한 덩어리로 읽힌다(MergeSemantics). 좁거나 글자가 크면 줄을 바꾼다(Wrap). 화면에서 가장 큰 글자는 칩이다(단계 제목 22보다 크게)."
+    },
+    "stepProgress": {
+      "flutter": "StepProgress (step_widgets.dart)",
+      "number": "typography.stepNumber '현재' + typography.stepNumberTotal '/전체'(colors.textSecondary). 완료면 'n/n 완료'",
+      "bars": "단계 수만큼 높이 6·모서리 3·간격 6 막대. 현재 단계까지 경로색, 나머지 outline 35%",
+      "trailing": "'All steps / 전체 단계' textButton",
+      "behavior": "숫자와 막대는 낭독에서 빼고 단계 제목이 'Step n of N: 제목'을 읽는다. 글자 배율이 커지면 '전체 단계'를 막대 아래 줄로 내린다(조건은 S02 명세 states)."
+    },
+    "stepPhoto": {
+      "flutter": "StepPhoto (step_widgets.dart) in PageView. 각 장은 CubePage로 감싼다(넘김 모양, motion.photoPaging)",
+      "ratio": "4:3, radii.card, 칸은 스크롤 안에서 줄지 않는다",
+      "placeholder": "같은 4:3 칸, colors.surfaceContainer 바탕, 카메라 아이콘 32 + 'Photo coming soon / 사진 준비 중'(700). 칸 아래 'Use the sign and steps below. / 아래 표지판과 안내를 따라가세요.'(typography.support)",
+      "credit": "사진 아래 출처 한 줄 typography.caption · colors.textSecondary",
+      "behavior": "사진은 두 테마에서 같은 원본, 밝기를 바꾸지 않는다. 대체 문구는 지금 언어의 표지판 이름. 가로로 밀면 앞뒤 단계로 이동하고, 마지막 단계에서 밀어도 완료 화면으로 가지 않는다. 넘기는 동안 덮는 그림자(motion.photoPaging)는 그 순간에만 있고 멈추면 원래 밝기다."
+    },
+    "stepNavBar": {
+      "flutter": "StepGuideScreen bottomNavigationBar Container (step_guide_screen.dart)",
+      "background": "colors.surface, 위쪽 1 colors.divider 선",
+      "padding": "가로 spacing.page, 위 10, 아래 14 + 안전 영역",
+      "layout": "단계 화면: '이전'(ghostButton) : '다음'(routeButton) = 1 : 1.4, 간격 10. 완료 화면: '경로 목록으로'(ghostButton) : 'n단계 다시 보기'(routeButton, 앞에 ← 아이콘) = 1 : 1",
+      "behavior": "S02에만 있다(하단 메뉴 대신). 단계 목록을 불러오는 중·실패 때는 보이지 않는다. 글자를 크게 키우면 하단 고정을 풀고 본문 끝에 둔다(S02 명세 states)."
+    },
+    "bottomNav": {
+      "flutter": "FloatingTabBar (lib/widgets/floating_tab_bar.dart), HomeShell bottomNavigationBar",
+      "status": "현재 동작(고도화, 위젯 검사 통과·화면 대조 전): 2026-10-22 사용자 요청(ui-validation-decisions.md D14·D15)으로 화면 폭 NavigationBar 막대에서 떠 있는 둥근 캡슐로 바꿈",
+      "items": "경로(Icons.signpost) S01 / 내 팁(Icons.lightbulb) S06 / 설정(Icons.settings). 선택 안 된 항목은 outlined 아이콘",
+      "shape": "화면 아래 떠 있는 캡슐: 좌우 spacing.page·아래 spacing.card 띄움(안전 영역 위) · colors.surface 바탕 · colors.divider 1 테두리 · radii.chip · 그림자 검정 12%·흐림 18·아래 4(앱 값) · 안쪽 spacing.fieldGap",
+      "height": "최소 sizes.navBarHeight. 글자를 키우면 캡슐도 높아진다",
+      "selected": "colors.surfaceContainer 둥근 선택 칸(캡슐 안에 하나만 그려 옮김) · 채운 아이콘 colors.textPrimary · 글자 colors.textPrimary 700",
+      "unselected": "outlined 아이콘·글자 colors.textSecondary · 글자 500",
+      "label": "typography.navLabel",
+      "press": "누를 때 물결·눌림 색이 없다(지금 탭은 선택 칸으로 구분). 키보드 초점 표시는 남긴다",
+      "behavior": {
+        "visibleOn": "S01·S06·S05에서만. S02~S04·S07에는 없다",
+        "otherTab": "그 화면으로 바뀌고 떠 있던 하단 알림을 닫는다. 상단 바 제목에 초점(S01은 본문 제목에 초점) — 현재 동작. 아이콘·글자는 고른 순간 바뀌고 선택 칸이 새 탭으로 미끄러진다(motion.tabIndicator) — 현재 동작(고도화, 위젯 검사 통과·화면 대조 전)",
+        "drag": "현재 동작(고도화, 위젯 검사 통과·화면 대조 전): 캡슐 위를 좌우로 끌면 선택 칸이 손가락을 따라가고, 손을 떼면 칸 가운데가 가장 가까운 탭을 고른다. 원래 탭이면 그대로(맨 위로 올리지 않음)",
+        "sameTab": "현재 동작(고도화, 위젯 검사 통과·화면 대조 전): 그 화면을 맨 위로 스크롤한다(250ms, 동작 줄이기면 바로)",
+        "systemBack": "S05·S06에서 시스템 뒤로 → 경로 탭(S01). S01에서 시스템 뒤로 → 앱 닫힘 — 현재 동작",
+        "keepState": "탭을 오가도 테마·언어·로그인·진행은 앱 전체 상태라 그대로다. S01은 앱이 보관한 경로 목록을 다시 보여 주고(다시 읽지 않음), S06은 들어올 때마다 서버에서 다시 읽는다. 스크롤은 맨 위에서 다시 시작한다 — 현재 동작. 스크롤·목록을 유지할지는 openQuestions"
+      },
+      "accessibility": "탭마다 이름과 순서('Routes / Tab 1 of 3')를 한 버튼으로 읽고 지금 탭은 선택 상태로 읽힌다(Material NavigationBar와 같게). 끌기는 낭독에서 빼고 탭 버튼만 읽힌다"
+    },
+    "routeCard": {
+      "flutter": "_RouteCard (route_list_screen.dart)",
       "background": "colors.surfaceContainer",
-      "title": "colors.textPrimary",
       "radius": "radii.card",
-      "padding": "spacing.card",
+      "minHeight": "sizes.routeCardMinHeight",
       "elements": [
-        "왼쪽 세로 띠(colors.routeExpress · colors.routeLocal · 준비 중 colors.outline)",
-        "경로 이름(직통열차 / 일반열차)",
-        "한 줄 설명과 표지판 병기(예: 직통열차 · Express Train)",
-        "단계 수"
+        "왼쪽 세로 띠 8(colors.routeExpress · colors.routeLocal · 준비 중 colors.outline)",
+        "경로 이름 typography.routeName (+ 준비 중이면 statusBadge.soon)",
+        "한 줄 설명(서버 summary, T2는 'T2 안내는 준비 중입니다') typography.support · colors.textSecondary",
+        "표지판 병기 줄 '직통열차 · Express Train · 공항철도 AREX' typography.caption(앱 상수 routeDisplays)",
+        "오른쪽 숫자 typography.stepNumber + 작은 글자 12: 시작 전 'N 단계', 진행 중 '(현재)/N 이어 보기', 끝까지 봄 'N/N 완료'"
       ],
-      "behavior": "S01 경로 카드. 색만으로 경로를 구분하지 않고 이름·표지판 글자를 함께 표시한다. T2는 '준비 중' 배지와 함께 누를 수 없는 상태로 보여 주고, 누르면 안내 문구만 띄운다."
+      "behavior": "카드 전체가 버튼 하나로 읽힌다. 색만으로 경로를 구분하지 않고 이름·표지판 글자를 함께 보인다. 진행이 있으면 카드 아래 오른쪽에 '처음부터' textButton(낭독 이름 'Start over: 경로 이름' / '경로 이름 처음부터')."
+    },
+    "tipCard": {
+      "flutter": "TipCard (tip_card.dart)",
+      "background": "colors.surfaceContainer",
+      "radius": "radii.box",
+      "padding": "가로 14, 세로 12",
+      "elements": [
+        "S06만: 위치 줄 '직통열차 · 5단계 중 3단계' typography.small · colors.textSecondary",
+        "제목(700) + statusBadge (한 줄에 안 들어가면 배지가 다음 줄)",
+        "메모(있을 때) typography.support",
+        "S02: '위치 · 작성자' / S06: '위치' typography.caption · colors.textSecondary",
+        "카드 안 알림(noticeBox, 그 팁의 실패·권한 없음)",
+        "버튼 줄: S06 '이 단계 보기', 내 팁이면 상태 바꾸기('Mark as out of date / 정보 오래됨으로 바꾸기' 또는 'Mark as checked / 확인함으로 바꾸기')"
+      ],
+      "states": {
+        "default": "테두리 없음",
+        "fresh": "방금 올린 팁: colors.primary 2 테두리 1.8초",
+        "saving": "그 카드만 버튼 'Saving… / 저장 중…' · 누를 수 없음",
+        "blocked": "권한 없음 뒤 다시 로그인할 때까지 버튼 누를 수 없음 + 노란 알림"
+      },
+      "behavior": "제목·위치·메모는 자르지 않고 모두 보인다(줄바꿈). 상태 바꾸기는 내가 올린 팁(서버 mine)에만, 예시 팁은 올린 사람이어도 숨긴다. 어느 팁의 알림인지 분명하게 알림은 카드 안에 둔다."
     },
     "statusBadge": {
-      "background": "colors.statusSurface",
-      "foreground": "colors.statusText",
-      "labels": [
-        "확인됨",
-        "정보 오래됨"
-      ],
-      "behavior": "색상과 상태 문구를 함께 사용한다. 확인됨은 statusSurface·statusText, 정보 오래됨과 '준비 중'은 colors.warningSurface·colors.warningText. 예시 팁에는 테두리만 있는 '예시' 배지를 덧붙인다. 상태 바꾸기 버튼은 그 팁을 올린 사용자에게만 보인다."
+      "flutter": "Pill (common.dart), TipStatusPill (tip_card.dart)",
+      "shape": "radii.chip(알약) · 안쪽 여백 가로 8 세로 3 · typography.badge",
+      "variants": {
+        "checked": "'Checked by author · 날짜 / 작성자 확인 · 날짜' colors.statusSurface 바탕 · colors.statusText 글자",
+        "outdated": "'Marked out of date by author · 날짜 / 작성자가 오래됨 표시 · 날짜' colors.warningSurface · colors.warningText",
+        "example": "'Example / 예시' 채움 colors.textSecondary 바탕 · colors.surface 글자(대비 밝게 7.14:1, 어둡게 8.52:1). 예시 팁은 이 배지 하나만",
+        "soon": "'Coming soon / 준비 중' colors.warningSurface · colors.warningText (S01 T2 카드)"
+      },
+      "behavior": "색과 문구를 함께 쓴다. 날짜는 verifiedAt의 서울 날짜(YYYY-MM-DD). 팁 상태 배지는 바뀌면 낭독한다(live region). radii.chip은 배지 모서리이고 표지판 칩(radii.sign)과 다르다."
     },
-    "page": {
-      "background": "colors.surface",
-      "padding": "spacing.page",
-      "behavior": "상단 남색 바(colors.signage 바탕·colors.onSignage 글자, 높이 sizes.appBarHeight)에 뒤로 가기(하위 화면에서만)·화면 제목. 언어·테마는 상단에 두지 않고 설정(S05)에서만 바꾼다. 하단 메뉴(경로 S01 / 내 팁 S06 / 설정 S05)는 최상위 화면에서만 보이고, S02 단계 안내·S03 팁 등록·S04 로그인에서는 숨긴다(S02는 이전·다음 하단 고정 바가 대신함). 메뉴 항목은 아이콘+글자, 최소 높이 60, 현재 화면은 aria-current=page와 colors.primary 16% 알약 배경·굵은 글자. 메뉴가 보이는 화면에는 뒤로 가기 버튼이 없다. 설정의 언어 목록은 각 언어를 그 언어로 표기(English / 한국어)하고 국기는 쓰지 않으며, 현재 언어는 colors.primary 테두리와 체크 표시. 좁은 화면·키보드·글자 확대에서 세로 스크롤과 읽는 순서를 확인한다. 시안의 장식용 휴대폰 테두리와 오른쪽 검토 패널은 구현하지 않는다."
+    "noticeBox": {
+      "flutter": "NoticeBox (common.dart)",
+      "variants": {
+        "error": "colors.errorSurface 바탕 · colors.error 글자 (팁 못 불러옴, 상태 못 바꿈, 올리기 실패, 로그인 끝남, 로그인 실패)",
+        "warning": "colors.warningSurface · colors.warningText (권한 없음, S03 시간 초과 뒤 결과 모름 + [팁 목록 확인])",
+        "info": "colors.surfaceContainer · colors.textPrimary (지금 쓰는 곳 없음)"
+      },
+      "radius": "radii.box",
+      "text": "typography.support",
+      "behavior": "화면 안에 남는 알림. 다음 행동 textButton(다시 시도·다시 로그인·팁 목록 확인)을 함께 둔다. 문구는 나타나면 낭독한다(live region)."
     },
     "statusMessage": {
-      "icon": "없음(제목·설명·버튼만)",
-      "title": "typography.section",
-      "body": "typography.body · colors.textSecondary",
+      "flutter": "StatusMessage (common.dart)",
+      "icon": "없음(제목·설명·버튼만). 현재 동작(고도화, 위젯 검사 통과·화면 대조 전): offline 변형만 제목 위에 그림(OfflineIllustration: surfaceContainer 원 112, Icons.wifi_off_rounded 56 textSecondary, 오른쪽 아래 warningSurface 원 안 Icons.airplanemode_active_rounded 22 warningText·surface 테두리 3, 낭독에서 뺌)",
+      "title": "typography.statusTitle, 가운데 정렬",
+      "body": "typography.body · colors.textSecondary, 가운데 정렬",
       "action": "primaryButton",
       "variants": {
-        "loading": "경로를 불러오는 중… (경로 카드 자리 표시 3개)",
-        "empty": "아직 경로가 없습니다. 경로가 추가되면 여기에 보입니다.",
-        "readFailure": "인터넷에 연결되지 않았습니다. 와이파이나 모바일 데이터를 켜고 다시 시도하세요. + 다시 시도"
+        "offline": "'You're offline / 인터넷에 연결되지 않았습니다' + 'This guide needs the internet. Connect to the airport's free Wi-Fi, then try again. / 이 안내는 인터넷이 필요해요. 공항 무료 와이파이에 연결한 뒤 다시 시도하세요.' + 다시 시도 + 버튼 아래 'If airplane mode is on, turn it off. We'll load this automatically when you're back online. / 비행기 모드라면 꺼 주세요. 인터넷이 다시 연결되면 자동으로 불러와요.'(14, textSecondary, 현재 동작(고도화, 위젯 검사 통과·화면 대조 전))",
+        "loadError": "'Couldn't load this. Try again. / 불러오지 못했어요. 다시 시도하세요.' + 다시 시도 (원인 모를 실패)",
+        "emptyRoutes": "'No routes yet / 아직 경로가 없습니다' + 'Routes will show up here once they're added. / 경로가 추가되면 여기에 보입니다.' (버튼 없음)",
+        "emptyMyTips": "'아직 올린 팁이 없어요. 각 단계의 팁 영역에서 올릴 수 있어요.' (제목·버튼 없음)",
+        "loginNeeded": "S06 로그인 전: 제목 'My tips / 내 팁' + 안내 + [로그인]"
       },
-      "behavior": "빈 목록과 읽기 실패를 같은 문구로 쓰지 않는다. readFailure 문구는 연결 끊김이 확인된 경우에만 쓰고, 원인을 모르는 실패용 문구는 7장 API 오류 형식과 함께 정한다."
+      "behavior": "빈 목록과 읽기 실패를 같은 문구로 쓰지 않는다. offline은 연결 끊김이 확인된 경우에만 쓴다. 제목에 초점(S06은 상단 바 제목에 초점). 현재 동작(고도화, 위젯 검사 통과·화면 대조 전): offline 안내가 떠 있는 동안 AutoRetry가 3초마다·앱으로 돌아올 때 조용히 다시 읽고 앞 요청이 끝나기 전에는 다시 보내지 않는다. 다시 붙는 도중 다른 실패가 나도 이어 간다."
     },
-    "feedbackBanner": {
-      "success": "colors.textPrimary 바탕 · colors.surface 글자의 하단 알림(약 2초)",
-      "failure": "colors.errorSurface 바탕 · colors.error 글자",
-      "behavior": "팁 등록 성공 시 '팁을 올렸습니다' 알림과 함께 S02의 같은 단계로 돌아가고 새 팁은 '확인됨'으로 보인다. 실패 시 작성한 값을 유지하고 다시 시도를 둔다."
+    "skeleton": {
+      "flutter": "SkeletonBox (common.dart)",
+      "background": "colors.surfaceContainer",
+      "sizes": "S01 경로 카드 88 × 3개, S02 사진 4:3, S02 팁 56, S06 팁 120 × 2개",
+      "behavior": "낭독에서 뺀다. 반짝임 없이 멈춰 있다. 불러오는 중 문구 한 줄과 함께 쓴다(S06 문구 줄은 현재 동작(고도화, 위젯 검사 통과·화면 대조 전))."
+    },
+    "snackBar": {
+      "flutter": "SnackBar (AppController.showMessage, snackBarTheme)",
+      "style": "떠 있는(floating) 상자 · colors.textPrimary 바탕 · colors.surface 글자 · typography.snackBar · radii.box",
+      "duration": "3초",
+      "use": "팁을 올렸습니다, T2 안내는 준비 중입니다, 로그아웃했습니다, 화면을 떠난 뒤 끝난 실패(올리기·상태 바꾸기), 같은 팁이 이미 있음(S03 [팁 목록 확인] 뒤, 10장)",
+      "behavior": "새 알림은 앞 알림을 닫고 뜬다. 화면을 쌓거나 닫을 때(MessageRouteObserver)와 하단 메뉴로 탭을 바꿀 때 닫는다. 화면 이동이 있으면 이동한 뒤에 띄운다."
+    },
+    "confirmDialog": {
+      "flutter": "AlertDialog (add_tip_screen.dart _confirmDiscard) + dialogTheme",
+      "use": "S03에서 하나라도 입력한 채 취소·뒤로(상단·시스템)를 누를 때만",
+      "style": "colors.surface 바탕 · radii.dialog · 제목 typography.dialogTitle · 본문 colors.textSecondary",
+      "content": "제목 'Discard this tip? / 작성 중인 팁을 버릴까요?', 본문 'What you typed will be lost. / 입력한 내용이 사라집니다.'",
+      "buttons": "왼쪽 'Discard / 버리기'(ghostButton) : 오른쪽 'Keep writing / 계속 쓰기'(primaryButton) = 1 : 1.4",
+      "behavior": "안전한 쪽('계속 쓰기')이 주요 버튼이고 처음 초점이다. 바깥 누름·시스템 뒤로도 '계속 쓰기'. 올리는 중에 나가면 확인 없이 나간다."
+    },
+    "settingsOption": {
+      "flutter": "_ThemeOption, _LanguageOption (settings_screen.dart)",
+      "segment": "화면 테마 3칸: colors.surfaceContainer 틀(안쪽 4, radii.box) 안 칸 최소 48, 선택 칸은 colors.surface 바탕 + colors.primary 2 테두리 + 체크 16, 글자 typography.optionSegment(선택 700). 셋 중 하나만 고르는 라디오로 읽힘",
+      "languageRow": "언어 줄: colors.surfaceContainer · radii.box · 최소 sizes.optionRowHeight, 그 언어로 쓴 이름(English / 한국어) typography.optionLanguage(선택 700) + 코드 'EN'·'KO'(13 / 600 / colors.textSecondary), 국기 없음. 선택 줄은 colors.primary 2 테두리 + 오른쪽 체크",
+      "behavior": "누르면 바로 적용하고 기기에 기억한다. 선택 표시는 두 칸 모두 primary 테두리 + 체크로 같다."
+    },
+    "stepSummary": {
+      "flutter": "StepSummary (step_widgets.dart)",
+      "style": "colors.surfaceContainer · radii.box, 왼쪽 경로색 띠 6, 머리말 'STEP / 단계' typography.eyebrow",
+      "content": "'직통열차 · 5단계 중 3단계 — 단계 제목'(앞부분 700)",
+      "behavior": "S03 맨 위 읽기 전용 줄. 입력칸처럼 보이지 않게 테두리가 없다. 길면 줄을 바꾼다."
+    },
+    "stepListItem": {
+      "flutter": "_StepListItem (step_guide_screen.dart)",
+      "style": "colors.surfaceContainer · 모서리 10 · 최소 48, 번호 16/700 + 단계 제목 14(현재 700, 나머지 500). 현재 단계는 경로색 2 테두리",
+      "behavior": "버튼으로 읽히고 이름은 'Step n of N: 제목', 현재 단계는 선택 상태. 누르면 그 단계로 가고 목록을 접는다."
+    },
+    "focusHeading": {
+      "flutter": "FocusHeading (common.dart)",
+      "behavior": "화면이 열리면 키보드·낭독기 초점을 화면 제목으로 옮긴다. S02 단계 제목은 'Step n of N: 제목'으로 읽고 단계가 바뀌면 다시 읽는다(live region). 화면 제목은 머리말로 읽힌다."
+    },
+    "page": {
+      "flutter": "Scaffold + AppBar + ScrollColumn (common.dart)",
+      "background": "colors.surface",
+      "padding": "spacing.page",
+      "appBar": "현재 동작(고도화, 위젯 검사 통과·화면 대조 전, 2026-10-22 사용자 요청 D14): colors.surface 바탕(화면 바탕과 같음) · colors.textPrimary 글자·아이콘 · 높이 sizes.appBarHeight · 제목 typography.appBarTitle 가운데 정렬 · 그림자 없음(스크롤해도 바탕색 그대로) · 상태 표시줄 아이콘은 밝은 테마에서 어둡게, 어두운 테마에서 밝게. 하위 화면(S02·S03·S04·S07)은 왼쪽 뒤로 가기, 최상위 화면은 뒤로 가기 없음. 언어·테마 버튼 없음. 남색(colors.signage)은 상단 바에 쓰지 않는다(표지판 칩에만)",
+      "behavior": "본문은 세로 스크롤 하나(ScrollColumn, 지연 생성 목록을 쓰지 않음 — 스크롤로 제목이 다시 만들어져 초점을 빼앗지 않게). 묶음 사이 spacing.section, 카드 사이 spacing.gutter. 시안의 휴대폰 테두리와 오른쪽 검토 패널, 상태 미리보기 버튼은 구현하지 않는다."
+    },
+    "motion": {
+      "pageTransition": "플랫폼 기본(MaterialPageRoute). 시안의 화면 진입 0.22초 효과는 쓰지 않는다",
+      "photoPaging": "버튼으로 단계를 옮길 때 사진이 250ms easeOut으로 넘어간다. 현재 동작(고도화, 위젯 검사 통과·화면 대조 전, D16): 넘기는 동안(밀기·이전·다음 모두) 두 사진이 정육면체의 이웃한 면처럼 맞닿은 모서리를 축으로 돈다(CubePage: 최대 90°, 원근 0.001, 돌아간 만큼 검정을 최대 35% 덮음, 멈추면 평평·원래 밝기). 동작 줄이기(disableAnimations)면 돌리지 않고, 버튼으로는 바로 바뀐다",
+      "tabIndicator": "현재 동작(고도화, 위젯 검사 통과·화면 대조 전, D15): 하단 메뉴 선택 칸이 새 탭으로 350ms 동안 미끄러진다. 앞쪽 끝은 easeOutCubic, 뒤쪽 끝은 easeInOutCubic이라 가는 동안 늘어났다가 줄어든다. 끄는 동안은 손가락을 따라간다. 동작 줄이기면 바로 옮긴다",
+      "freshTip": "새 팁으로 300ms 스크롤(화면 가운데) + 테두리 강조 1.8초, 테두리 변화 200ms. 현재 동작(고도화, 위젯 검사 통과·화면 대조 전): 동작 줄이기면 스크롤도 바로 이동",
+      "snackBar": "3초",
+      "skeleton": "반짝임 없음(멈춘 자리표시)"
     }
   },
   "flutterAdaptations": {
-    "status": "이 앱에 적용할 이식 기준. 원래 CSS의 측정값과 구분한다.",
+    "status": "이 앱에 적용한 이식 기준. 원래 CSS의 측정값과 구분한다.",
     "typography": {
       "body": {
         "fontSize": 16
@@ -226,56 +539,105 @@
     },
     "fontFamily": null,
     "rules": [
-      "제목·버튼·모서리·색상은 위 토큰을 출발점으로 사용한다.",
+      "제목·버튼·모서리·색상은 위 토큰을 출발점으로 사용한다. 화면에 숫자를 새로 넣기 전에 typography의 새 키를 먼저 찾는다.",
       "본문 15는 Flutter에서 16으로 키운다. 시안의 사진 출처 11px 글자는 12로 맞춘다.",
-      "누를 수 있는 영역은 최소 48×48 논리 픽셀을 확보한다(언어 전환 버튼 포함).",
-      "시안의 Noto Sans KR·Barlow Semi Condensed를 기기에 있다고 가정하지 않는다. 글꼴을 넣을지 플랫폼 기본 글꼴을 쓸지는 9장에서 정하고, 한글·영문 줄바꿈을 확인한다.",
-      "글자 확대를 막거나 고정 높이에 잘라 넣지 않는다. 단계 사진은 4:3 비율로 두고 사진이 없으면 '사진 준비 중' 자리표시를 쓴다.",
-      "입력칸 테두리는 바탕과 3:1 이상(현재 4.21:1), 보조 글자는 4.5:1 이상(현재 7.14:1)을 유지한다. 색을 바꾸면 대비를 다시 잰다(교재 5.3).",
-      "다크 모드: ThemeData를 밝은(tokens.colors)·어두운(tokens.colorsDark) 두 벌로 만들고 themeMode는 시스템 기본, S01 '화면 테마'에서 시스템/밝게/어둡게를 고른다. colors와 colorsDark는 키가 같으므로 컴포넌트는 키만 참조한다.",
-      "역할을 섞지 않는다: primary/onPrimary는 주요 행동 버튼, signage/onSignage는 상단 바·표지판 칩, routeExpress·routeLocal/onRoute는 경로 버튼·띠. 밝은 테마에서는 primary와 signage 값이 같지만 어두운 테마에서는 다르다.",
-      "경로색 위 글자는 반드시 같은 테마의 onRoute를 쓴다. 어두운 경로색에 흰 글자는 약 2.1:1, 밝은 경로색에 어두운 테마 글자는 3.5~3.8:1로 모두 미달이다.",
-      "입력 예시 글자(placeholder)는 textSecondary를 불투명도 1로 지정한다(밝게 7.14:1, 어둡게 8.52:1). 플랫폼 기본값에 맡기지 않는다.",
-      "사진은 두 테마에서 같은 원본을 쓰고 밝기를 바꾸지 않는다(표지판 색이 실제와 달라지지 않게)."
+      "누를 수 있는 영역은 최소 48×48 논리 픽셀을 확보한다(글자 버튼·눈 아이콘 포함).",
+      "시안의 Noto Sans KR·Barlow Semi Condensed를 기기에 있다고 가정하지 않는다. 지금은 플랫폼 기본 글꼴이다. Flutter는 한글 낱말 단위 줄바꿈(keep-all)을 지원하지 않아 음절 중간에서 줄이 바뀔 수 있다.",
+      "글자 확대를 막거나 고정 높이에 잘라 넣지 않는다. 단계 사진은 4:3, 사진이 없으면 같은 칸에 '사진 준비 중' 자리표시를 쓴다.",
+      "입력칸 테두리는 바탕과 3:1 이상(현재 4.21:1), 보조 글자는 4.5:1 이상(현재 7.14:1)을 유지한다. 색을 바꾸면 대비를 다시 잰다.",
+      "다크 모드: ThemeData를 밝은(tokens.colors)·어두운(tokens.colorsDark) 두 벌로 만들고 themeMode는 시스템 기본, S05 설정 '화면 테마'에서 시스템/밝게/어둡게를 고른다. colors와 colorsDark는 키가 같으므로 컴포넌트는 키만 참조한다(lib/theme/app_colors.dart).",
+      "역할을 섞지 않는다: primary/onPrimary는 주요 행동 버튼, signage/onSignage는 표지판 칩(상단 바는 2026-10-22부터 surface 바탕·textPrimary 글자, D14), routeExpress·routeLocal/onRoute는 경로 버튼·띠·점. 글자 버튼 색은 routeLocal. 밝은 테마에서는 primary와 signage 값이 같지만 어두운 테마에서는 다르다.",
+      "경로색 위 글자는 반드시 같은 테마의 onRoute를 쓴다.",
+      "입력 예시 글자(placeholder)는 textSecondary를 불투명도 1로 지정한다(밝게 7.14:1, 어둡게 8.52:1).",
+      "사진은 두 테마에서 같은 원본을 쓰고 밝기를 바꾸지 않는다(표지판 색이 실제와 달라지지 않게).",
+      "큰 글자: 글자 배율에 따라 S02 '전체 단계'를 다음 줄로, 이전·다음 바를 본문 끝으로 옮긴다. 조건 숫자는 S02-screen-spec.md states.",
+      "동작 줄이기(MediaQuery.disableAnimations)면 사진 넘김을 바로 바꾼다. 새 팁 스크롤, 단계 이동 뒤 맨 위로, 같은 탭 다시 누름도 같게 하고, 사진을 밀 때도 돌리지 않으며, 하단 메뉴 선택 칸은 바로 옮긴다(현재 동작(고도화, 위젯 검사 통과·화면 대조 전))."
     ]
   },
   "sourceFiles": [
     {
-      "sha256": "22c03b1da92643ae3fe01d2bdea4a9325ebbc8d24c3b2664898b6fbf831196e9",
-      "scope": "S01~S04 클릭 시안 전체(:root 토큰, 구성요소, 상태 문구, 사진 4장 포함)",
-      "originalAuthoringPath": "docs/screens/ICN-subway-steps-v01.html",
+      "sha256": "5bbea5dd476230168ad5a095623f5621fb5ec8e6e57bb2cd2de7eb4938cb0bfe",
+      "scope": "S01~S06 클릭 시안 원본(:root 토큰, 구성요소, 상태 문구). 2026-10-20 고정",
+      "originalAuthoringPath": "docs/screens/ICN-subway-steps-v03.src.html",
       "locationNote": "학생 작업 폴더 C:\\dev\\chapter05-ai 안의 파일. 사진 원본과 출처는 C:\\dev\\photo-sources\\airport-subway\\licenses.txt."
+    },
+    {
+      "scope": "실제 Flutter 앱(디자인 기준). 색 lib/theme/app_colors.dart, 글자·버튼·입력·상단 바·알림 lib/theme/app_theme.dart, 부품 lib/widgets(하단 메뉴 floating_tab_bar.dart 포함), 화면 lib/screens, 문구 lib/l10n/app_strings.dart",
+      "originalAuthoringPath": "C:\\dev\\projects\\icn_subway_app\\lib",
+      "locationNote": "시안과 다르게 둔 것은 C:\\dev\\projects\\icn_subway_app\\docs\\handoff.md"
     }
   ],
   "tokenEvidence": {
-    "colors.primary": ":root --cta (.btn.cta background)",
-    "colors.signage": ":root --navy (.bar, .sign background)",
-    "colors.routeExpress": ":root --express",
-    "colors.routeLocal": ":root --local",
-    "colors.onRoute": ":root --on-route (.btn.primary color)",
-    "colors.divider": ":root --divider (.tips border-top)",
-    "colors.surface": ":root --surface (.phone background)",
-    "colors.textPrimary": ":root --ink",
-    "colors.textSecondary": ":root --ink-2 (.lead, .meta, .hint)",
-    "typography.title": ".step-title",
-    "typography.section": ".tips-head h3",
-    "typography.body": "body",
-    "typography.label": ".field label",
-    "typography.button": ".btn",
-    "typography.caption": ".hint, .credit(11px → 12로 조정)",
-    "spacing.page": ".screen padding-inline",
-    "spacing.fieldGap": ".field gap",
-    "spacing.section": ".screen gap",
-    "spacing.card": ".tip padding-block",
-    "radii.button": ".btn",
-    "radii.input": ".field input",
-    "radii.card": ":root --r (.route, .photo)",
-    "radii.hero": ".photo (단계 사진)",
-    "radii.chip": ".pill, .badge",
-    "sizes.inputHeight": ".field input min-height",
-    "sizes.appBarHeight": ".bar 높이(패딩 포함 약 56)",
-    "colors.outline": ":root --line (.field input border, 흰 바탕 대비 4.21:1)"
+    "colors.primary": "v03 --cta (.btn.cta) · AppColors.primary",
+    "colors.onPrimary": "v03 --on-cta · AppColors.onPrimary",
+    "colors.surface": "v03 --surface (.phone) · AppColors.surface",
+    "colors.surfaceContainer": "v03 --surface-2 (카드·입력 바탕) · AppColors.surfaceContainer",
+    "colors.textPrimary": "v03 --ink · AppColors.textPrimary",
+    "colors.textSecondary": "v03 --ink-2 · AppColors.textSecondary",
+    "colors.outline": "v03 --line (입력칸 테두리, 흰 바탕 대비 4.21:1) · AppColors.outline",
+    "colors.divider": "v03 --divider · AppColors.divider",
+    "colors.error": "v03 --err · AppColors.error",
+    "colors.errorBorder": "v03 --err (.field [aria-invalid]) · AppColors.errorBorder",
+    "colors.errorSurface": "v03 --err-soft · AppColors.errorSurface",
+    "colors.statusSurface": "v03 --ok-soft · AppColors.statusSurface",
+    "colors.statusText": "v03 --ok · AppColors.statusText",
+    "colors.signage": "v03 --navy (.bar, .sign) · AppColors.signage. 앱 상단 바는 2026-10-22부터 surface(D14)라 표지판 칩에만 쓴다",
+    "colors.onSignage": "v03 --on-navy · AppColors.onSignage",
+    "colors.routeExpress": "v03 --express · AppColors.routeExpress",
+    "colors.routeLocal": "v03 --local (.linkbtn도 이 색) · AppColors.routeLocal / AppColors.link",
+    "colors.onRoute": "v03 --on-route (.btn.primary 글자) · AppColors.onRoute",
+    "colors.warningSurface": "v03 --warn-soft · AppColors.warningSurface",
+    "colors.warningText": "v03 --warn · AppColors.warningText",
+    "typography.title": "v03 .step-title 22 · Flutter titleLarge 22",
+    "typography.section": "v03 .tips-head h3 16 · Flutter titleMedium 16",
+    "typography.body": "v03 body 15 · Flutter bodyLarge·bodyMedium 16",
+    "typography.label": "v03 .field label 14 · Flutter labelLarge 14",
+    "typography.button": "v03 .btn 16 · Flutter _buttonText 16",
+    "typography.caption": "v03 .credit 12 · Flutter bodySmall 12",
+    "typography.appBarTitle": "v03 .bar h1 21 · Flutter appBarTheme.titleTextStyle 21 / 700(2026-10-22부터 가운데 정렬·textPrimary)",
+    "typography.doneTitle": "v03 .done h2 26 · Flutter headlineSmall 26",
+    "typography.statusTitle": "v03 .empty b 20 · Flutter StatusMessage 20",
+    "typography.dialogTitle": "v03 .dialog h2 19 · Flutter AlertDialog 기본(headlineSmall) 26 — 앱 값",
+    "typography.stepNumber": "v03 .stepbar .num 24 · Flutter StepProgress 24 (경로 카드 숫자도 24)",
+    "typography.stepNumberTotal": "v03 .num small 15 · Flutter StepProgress '/N' 15",
+    "typography.routeName": "v03 .route .name 18 · Flutter _RouteCard 18",
+    "typography.signKo": "v03 .sign 21 · Flutter SignChip 21",
+    "typography.signEn": "v03 .sign em 20·불투명도 0.9 · Flutter SignChip 21·불투명 — 앱 값(4차 VIS-02·DEC-05)",
+    "typography.roleLabel": "v03 .role 12 회색 · Flutter SignChip 14 본문색 — 앱 값",
+    "typography.eyebrow": "v03 .eyebrow 12 / .12em · Flutter labelMedium 12 / letterSpacing 1.2",
+    "typography.support": "v03 .route .sub·.asideline 13, .tip .memo 14 · Flutter 14(경로 설명·엘리베이터 줄·메모·알림 상자)",
+    "typography.small": "v03 .mytip .where 13 · Flutter TipCard where 13",
+    "typography.errorText": "v03 .err 13 / 500 · Flutter inputDecorationTheme.errorStyle 13 / 500",
+    "typography.badge": "v03 .pill·.badge 12 / 600 · Flutter Pill 12 / 600",
+    "typography.navLabel": "v03 .tabbar button 12 / 500 · Flutter FloatingTabBar 12 / 500(선택 700)",
+    "typography.snackBar": "v03 .toast 700 · Flutter snackBarTheme 16 / 700",
+    "typography.optionLanguage": "v03 .opt 17 / 500 · Flutter _LanguageOption 17",
+    "typography.optionSegment": "v03 .seg button 15 / 500 · Flutter _ThemeOption 15",
+    "spacing.page": "v03 .screen padding-inline 18 · AppSpace.page",
+    "spacing.fieldGap": "v03 .field gap 6 · AppSpace.fieldGap",
+    "spacing.section": "v03 .screen gap 16 · AppSpace.section",
+    "spacing.card": "v03 .tip padding-block 12 · AppSpace.card",
+    "spacing.gutter": "v03 .stack gap·.dock gap 10 · Flutter Gap(10)·버튼 사이 10",
+    "radii.button": "v03 .btn 12 · AppRadius.button",
+    "radii.input": "v03 .field input 10 · AppRadius.input",
+    "radii.card": "v03 --r 14 (.route, .photo) · AppRadius.card",
+    "radii.hero": "v03 .photo 14. Flutter는 사진에도 AppRadius.card를 쓴다(같은 값)",
+    "radii.chip": "v03 .pill·.badge 999 · AppRadius.chip (배지 모서리, 표지판 칩 아님)",
+    "radii.sign": "v03 .sign 10 · SignChip 10",
+    "radii.box": "v03 .tip·.notice·.seg·.opt·.toast 12 · Flutter TipCard·NoticeBox·StepSummary·설정 칸·SnackBar 12",
+    "radii.dialog": "v03 .dialog 18 · Flutter dialogTheme 18",
+    "sizes.inputHeight": "v03 .field input min-height 48",
+    "sizes.appBarHeight": "v03 .bar 약 56 · AppSizes.appBar 56",
+    "sizes.buttonHeight": "v03 .btn min-height 52 · AppSizes.button 52",
+    "sizes.navBarHeight": "v03 .tabbar button min-height 60 · Flutter FloatingTabBar 캡슐 최소 높이 68(AppSizes.navBar) — 앱 값",
+    "sizes.routeCardMinHeight": "v03 .route min-height 88 · _RouteCard 88",
+    "sizes.optionRowHeight": "v03 .opt min-height 56 · _LanguageOption 56"
   },
+  "openQuestions": [
+    "글꼴을 앱에 넣을지(지금은 플랫폼 기본). 넣으면 한글 줄바꿈과 typography 값을 다시 확인한다.",
+    "확인창 제목이 앱에서 Material 기본값 26으로 커서 시안 19보다 크다. 지금은 앱 값을 기준으로 적었다. 줄일지는 사용자 판단.",
+    "탭을 바꿀 때 스크롤·목록을 유지할지(지금은 맨 위부터, S06은 다시 읽음). S06 '이 단계 보기'로 연 S02의 뒤로를 S01(지금)과 S06 중 어디로 할지."
+  ],
   "references": [
     {
       "title": "Flutter accessibility",

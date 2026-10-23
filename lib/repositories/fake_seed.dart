@@ -51,7 +51,7 @@ const Map<String, dynamic> _step2 = {
   'stepNo': 2,
   'role': 'FIND',
   'icon': 'ESCALATOR',
-  'photoKey': null,
+  'photoKey': 'transportCenter',
   'sign': {'ko': '교통센터 · 공항철도', 'en': 'Transportation Center · Airport Railroad'},
   'title': {'en': 'Go down to the Transportation Center', 'ko': '교통센터로 내려가기'},
   'instructions': {
@@ -87,7 +87,7 @@ const Map<String, Map<String, dynamic>> fakeStepsResponses = {
         'stepNo': 4,
         'role': 'FIND',
         'icon': 'TRAIN',
-        'photoKey': null,
+        'photoKey': 'expressGate',
         'sign': {'ko': '직통열차 승차구', 'en': 'Express Gate'},
         'title': {'en': 'Pass the Express Train gate', 'ko': '직통열차 개찰구 통과'},
         'instructions': {
@@ -100,7 +100,7 @@ const Map<String, Map<String, dynamic>> fakeStepsResponses = {
         'stepNo': 5,
         'role': 'FIND',
         'icon': 'TRAIN',
-        'photoKey': null,
+        'photoKey': 'expressPlatform',
         'sign': {'ko': '직통열차 승강장 · 서울역 방면', 'en': 'Express Platform · To Seoul Station'},
         'title': {'en': 'Board at the Express platform', 'ko': '직통열차 승강장에서 탑승'},
         'instructions': {
@@ -133,7 +133,7 @@ const Map<String, Map<String, dynamic>> fakeStepsResponses = {
         'stepNo': 4,
         'role': 'FIND',
         'icon': 'TRAIN',
-        'photoKey': null,
+        'photoKey': 'localGate',
         'sign': {'ko': '일반열차 승차구', 'en': 'All-stop Gate'},
         'title': {'en': 'Tap your card at the gate', 'ko': '개찰구에 카드 찍기'},
         'instructions': {

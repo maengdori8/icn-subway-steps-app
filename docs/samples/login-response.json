@@ -1,0 +1,9 @@
+{
+  "accessToken": "(숨김)",
+  "tokenType": "Bearer",
+  "expiresIn": 1800,
+  "user": {
+    "id": 101,
+    "username": "student01"
+  }
+}

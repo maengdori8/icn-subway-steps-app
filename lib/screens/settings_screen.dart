@@ -10,10 +10,16 @@ import 'login_screen.dart';
 
 const _dataGoUrl = 'https://www.data.go.kr/data/15130703/fileData.do';
 const _ccBySaUrl = 'https://creativecommons.org/licenses/by-sa/4.0/';
+const _ccByUrl = 'https://creativecommons.org/licenses/by/2.5/';
+const _ccBySa2Url = 'https://creativecommons.org/licenses/by-sa/2.0/';
 const _commonsUrls = [
   'https://commons.wikimedia.org/wiki/File:202403_AREX_Express_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg',
   'https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Train_Concourse_at_Incheon_International_Airport_Terminal_1_Station.jpg',
   'https://commons.wikimedia.org/wiki/File:202403_AREX_Local_Platform_1,2_of_Incheon_International_Airport_Terminal_1_Station.jpg',
+  'https://commons.wikimedia.org/wiki/File:Incheon_Airport_Transportation_Center_Main_Hall.jpg',
+  'https://commons.wikimedia.org/wiki/File:AREX-Incheon-International-Airport-Station-Gates.JPG',
+  'https://commons.wikimedia.org/wiki/File:Korail_ar_incheon_int%27l_airport_sta_02.jpg',
+  'https://commons.wikimedia.org/wiki/File:Wongwt_首爾機場快鐵_(16921458087).jpg',
 ];
 
 // S05 설정: 화면 테마(시스템/밝게/어둡게), 언어(English/한국어), 계정·로그아웃, 사진 출처, 정보.
@@ -117,8 +123,19 @@ class SettingsScreen extends StatelessWidget {
               SelectableText(_dataGoUrl, style: small),
               const SizedBox(height: 8),
               MixedText(s.creditWiki, language: app.language, style: small),
+              MixedText(s.creditTransport, language: app.language, style: small),
+              MixedText(s.creditExpressGate, language: app.language, style: small),
               Text('${s.creditLicenseLink}:', style: small),
               SelectableText(_ccBySaUrl, style: small),
+              const SizedBox(height: 8),
+              MixedText(s.creditGate, language: app.language, style: small),
+              Text('${s.creditLicenseLink}:', style: small),
+              SelectableText(_ccByUrl, style: small),
+              const SizedBox(height: 8),
+              MixedText(s.creditExpressPlatform, language: app.language, style: small),
+              Text('${s.creditLicenseLink}:', style: small),
+              SelectableText(_ccBySa2Url, style: small),
+              const SizedBox(height: 8),
               Text('${s.creditOriginals}:', style: small),
               for (final url in _commonsUrls) SelectableText(url, style: small),
             ],
@@ -126,7 +143,7 @@ class SettingsScreen extends StatelessWidget {
         ),
         _Group(
           title: s.setAbout,
-          child: Text(s.version, style: small),
+          child: Text(s.version(demoData: app.demoData), style: small),
         ),
       ],
     );

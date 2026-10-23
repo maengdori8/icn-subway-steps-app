@@ -1,0 +1,1664 @@
+{
+  "info": {
+    "name": "ICN Subway Steps · 10장 앱 연결 검사",
+    "description": "10장(서버 연동과 JWT 로그인)에서 앱이 내 서버에 등록한 팁을 Postman으로 다시 읽고, 앱 화면으로 만들 수 없는 거부 요청(401·403·405)과 거부 뒤 값이 그대로인지 확인한다.\n근거: 서버 docs/api-spec.yaml, docs/permission-matrix.md, docs/state-rules.md(앱 docs/api/에 사본), 교재 10장 005_검사순서.txt, 앱 docs/samples/.\n\n준비\n1. 내 서버를 켠다(PC 주소 http://127.0.0.1:8097).\n2. 앱(에뮬레이터, API_BASE_URL=http://10.0.2.2:8097)에서 A(student01)로 로그인해 겹치지 않는 제목으로 팁을 하나 등록하고, 그 제목을 적어 둔다(앱 화면에는 팁 번호가 없다).\n3. Postman 10.13.0: Import로 이 컬렉션과 postman/ch10.environment.json을 가져온다. 환경 편집에서 passwordA·passwordB의 Current Value에 표본 비밀번호(서버 docs/requirements.md의 공개 표본 값)를, appTipTitle의 Current Value에 2의 제목을 직접 입력한다. Initial Value에는 넣지 않고, 값이 든 환경은 내보내지 않는다(비밀번호를 파일에 쓰지 않음).\n4. 오른쪽 위에서 환경을 고르고 Runner로 처음부터 순서대로 실행한다(토큰·팁 번호·비교 기준이 앞 요청에서 이어진다).\n\nNewman(명령줄): newman run postman/ch10-app-integration.collection.json -e postman/ch10.environment.json --env-var passwordA=<표본 비밀번호> --env-var passwordB=<표본 비밀번호> --env-var \"appTipTitle=<앱에서 쓴 제목>\" (비밀번호는 실행할 때만 넣고 파일에 쓰지 않는다)\n\n토큰은 컬렉션 변수에만 두고, 실행이 중간에 멈추면 그때, 끝까지 가면 마지막 요청에서 비운다. 컬렉션을 내보내기 전에 변수 현재값에 토큰이 없는지 본다.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0 준비: 로그인과 앱이 만든 팁 찾기",
+      "description": "A·B로 로그인하고, 앱에서 A가 등록한 팁을 제목(appTipTitle)으로 A의 내 팁에서 찾아 번호(appTipId)를 정한 뒤, 토큰 없이 다시 읽어 비교 기준으로 저장한다. 앱 화면에는 팁 번호가 없어 제목으로 찾는다. 교재 003의 '4) PC에서 그 ID를 다시 조회해 저장 결과 확인'에 해당한다.",
+      "item": [
+        {
+          "name": "A 로그인 · 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "계정 A(환경의 userA)로 로그인한다. 비밀번호는 Postman 환경의 Current Value에만 직접 넣는다(파일에 쓰지 않음). 토큰은 컬렉션 변수 tokenA에만 두고 화면·파일에 쓰지 않는다.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{userA}}\",\n  \"password\": \"{{passwordA}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var body = null;",
+                  "try { body = pm.response.json(); } catch (e) { body = null; }",
+                  "if (pm.response.code !== 200 || !body || typeof body.accessToken !== \"string\" || !body.user) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"A 로그인 실패: 서버가 켜져 있는지, 환경의 passwordA를 넣었는지 확인한다\", function () { pm.expect.fail(\"A 로그인 실패: 서버가 켜져 있는지, 환경의 passwordA를 넣었는지 확인한다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else {",
+                  "  pm.test(\"토큰과 사용자 번호를 받았다(값은 출력하지 않음)\", function () {",
+                  "    pm.expect(body.accessToken).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(body.tokenType).to.eql(\"Bearer\");",
+                  "    pm.expect(body.user.id).to.be.a(\"number\");",
+                  "    pm.expect(body.user.username).to.eql(pm.variables.get(\"userA\"));",
+                  "  });",
+                  "  pm.collectionVariables.set(\"tokenA\", body.accessToken);",
+                  "  pm.collectionVariables.set(\"userIdA\", String(body.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱이 만든 팁 찾기 · GET /api/me/tips(A) · 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/tips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "tips"
+              ]
+            },
+            "description": "환경의 appTipTitle에 앱(에뮬레이터)에서 A로 등록할 때 쓴 제목을 그대로 넣는다. 같은 제목이 없거나 둘 이상이면 실행을 멈춘다(겹치지 않는 제목으로 등록한다)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 이전 실행의 팁 번호·비교 기준을 비우고 시작한다(Codex 2회차 지적 4).",
+                  "pm.collectionVariables.set(\"appTipId\", \"\");",
+                  "pm.collectionVariables.set(\"snapshot\", \"\");",
+                  "var title = pm.variables.get(\"appTipTitle\");",
+                  "var mine = null;",
+                  "try { var body = pm.response.json(); if (body && Array.isArray(body.tips)) { mine = body.tips; } } catch (e) { mine = null; }",
+                  "var same = (mine || []).filter(function (t) { return t && t.title === title; });",
+                  "if (!title) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"환경의 appTipTitle에 앱에서 A로 등록한 팁 제목을 넣는다\", function () { pm.expect.fail(\"환경의 appTipTitle에 앱에서 A로 등록한 팁 제목을 넣는다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else if (pm.response.code !== 200 || mine === null) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"A의 내 팁을 읽지 못했다(상태 코드나 응답 모양이 명세와 다름)\", function () { pm.expect.fail(\"A의 내 팁을 읽지 못했다(상태 코드나 응답 모양이 명세와 다름)\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else if (same.length !== 1) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"A의 내 팁에서 appTipTitle과 같은 제목이 정확히 하나여야 한다(지금 개수가 다름)\", function () { pm.expect.fail(\"A의 내 팁에서 appTipTitle과 같은 제목이 정확히 하나여야 한다(지금 개수가 다름)\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else {",
+                  "  pm.test(\"상태 코드 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.collectionVariables.set(\"appTipId\", String(same[0].id));",
+                  "  pm.test(\"앱이 만든 팁 번호 \" + same[0].id + \"(제목으로 찾음)\", function () {",
+                  "    pm.expect(same[0].mine).to.eql(true);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B 로그인 · 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "계정 B(환경의 userB)로 로그인한다. 비밀번호는 Postman 환경의 Current Value에만 직접 넣는다(파일에 쓰지 않음). 토큰은 컬렉션 변수 tokenB에만 두고 화면·파일에 쓰지 않는다.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{userB}}\",\n  \"password\": \"{{passwordB}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var body = null;",
+                  "try { body = pm.response.json(); } catch (e) { body = null; }",
+                  "if (pm.response.code !== 200 || !body || typeof body.accessToken !== \"string\" || !body.user) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"B 로그인 실패: 서버가 켜져 있는지, 환경의 passwordB를 넣었는지 확인한다\", function () { pm.expect.fail(\"B 로그인 실패: 서버가 켜져 있는지, 환경의 passwordB를 넣었는지 확인한다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else {",
+                  "  pm.test(\"토큰과 사용자 번호를 받았다(값은 출력하지 않음)\", function () {",
+                  "    pm.expect(body.accessToken).to.be.a(\"string\").and.not.empty;",
+                  "    pm.expect(body.tokenType).to.eql(\"Bearer\");",
+                  "    pm.expect(body.user.id).to.be.a(\"number\");",
+                  "    pm.expect(body.user.username).to.eql(pm.variables.get(\"userB\"));",
+                  "  });",
+                  "  pm.collectionVariables.set(\"tokenB\", body.accessToken);",
+                  "  pm.collectionVariables.set(\"userIdB\", String(body.user.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱이 만든 팁 다시 읽기 · GET /api/tips/{appTipId} · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            },
+            "description": "토큰 없이 읽는다. 등록자가 A가 아니면 실행을 멈춘다."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var appTipId = pm.collectionVariables.get(\"appTipId\");",
+                  "var read = null;",
+                  "try { read = pm.response.json(); } catch (e) { read = null; }",
+                  "if (!appTipId || !/^[0-9]+$/.test(appTipId)) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"앱이 만든 팁 번호(appTipId)를 정하지 못했다: 앞 요청 결과를 본다\", function () { pm.expect.fail(\"앱이 만든 팁 번호(appTipId)를 정하지 못했다: 앞 요청 결과를 본다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else if (pm.response.code !== 200 || !read) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"appTipId 팁을 읽지 못했다: 번호와 서버 주소를 확인한다\", function () { pm.expect.fail(\"appTipId 팁을 읽지 못했다: 번호와 서버 주소를 확인한다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else if (read.ownerId !== Number(pm.collectionVariables.get(\"userIdA\"))) {",
+                  "  [\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });",
+                  "  pm.test(\"appTipId 팁의 등록자가 A가 아니다: 앱에서 A(userA)로 로그인해 등록한 번호인지 확인한다\", function () { pm.expect.fail(\"appTipId 팁의 등록자가 A가 아니다: 앱에서 A(userA)로 로그인해 등록한 번호인지 확인한다\"); });",
+                  "  postman.setNextRequest(null);",
+                  "} else {",
+                  "  pm.test(\"상태 코드 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "  pm.test(\"토큰 없이 읽어 mine은 false, 예시 팁이 아니다\", function () {",
+                  "    pm.expect(pm.response.json().mine).to.eql(false);",
+                  "    pm.expect(pm.response.json().example).to.eql(false);",
+                  "  });",
+                  "  pm.test(\"비교할 값 11개가 모두 있고 자료형이 맞다\", function () {",
+                  "    var tip = pm.response.json();",
+                  "    [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(tip, k).to.have.property(k); });",
+                  "    pm.expect(tip.id).to.be.a(\"number\");",
+                  "    pm.expect(tip.stepNo).to.be.a(\"number\");",
+                  "    pm.expect(tip.ownerId).to.be.a(\"number\");",
+                  "    [\"route\", \"title\", \"location\", \"status\", \"verifiedAt\", \"createdAt\"].forEach(function (k) { pm.expect(tip[k], k).to.be.a(\"string\"); });",
+                  "    pm.expect(tip.note === null || typeof tip.note === \"string\", \"note\").to.eql(true);",
+                  "    pm.expect(tip.example).to.be.a(\"boolean\");",
+                  "  });",
+                  "  var saved = {};",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { saved[k] = pm.response.json()[k]; });",
+                  "  pm.collectionVariables.set(\"snapshot\", JSON.stringify(saved));",
+                  "  var tip = pm.response.json();",
+                  "  pm.collectionVariables.set(\"appRoute\", tip.route);",
+                  "  pm.collectionVariables.set(\"appStepNo\", String(tip.stepNo));",
+                  "  pm.collectionVariables.set(\"originalStatus\", tip.status);",
+                  "  pm.collectionVariables.set(\"otherStatus\", tip.status === \"VERIFIED\" ? \"OUTDATED\" : \"VERIFIED\");",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1 공개 목록 대조(토큰 없이)",
+      "description": "앱 화면이 읽는 공개 GET 세 개(S01 경로, S02 단계, S02 팁). 토큰을 붙이지 않는다. 앱 화면의 이름·위치와 같은지는 에뮬레이터 화면과 대조한다(교재 005 1번).",
+      "item": [
+        {
+          "name": "경로 목록 · GET /api/routes · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/routes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "routes"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"직통·일반은 이용 가능, T2는 준비 중(docs/samples/routes-list.json과 같음)\", function () {",
+                  "  var routes = pm.response.json().routes;",
+                  "  var byCode = {};",
+                  "  routes.forEach(function (r) { byCode[r.code] = r; });",
+                  "  pm.expect(byCode.EXPRESS.available).to.eql(true);",
+                  "  pm.expect(byCode.LOCAL.available).to.eql(true);",
+                  "  pm.expect(byCode.T2.available).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱 팁의 단계 · GET /api/routes/{route}/steps · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/routes/{{appRoute}}/steps",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "routes",
+                "{{appRoute}}",
+                "steps"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"앱 팁의 단계 번호가 이 경로의 단계에 있다\", function () {",
+                  "  var body = pm.response.json();",
+                  "  pm.expect(body.route).to.eql(pm.collectionVariables.get(\"appRoute\"));",
+                  "  pm.expect(body.steps.map(function (s) { return s.stepNo; })).to.include(Number(pm.collectionVariables.get(\"appStepNo\")));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "그 단계의 팁 목록 · GET /api/tips?route=&step= · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips?route={{appRoute}}&step={{appStepNo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips"
+              ],
+              "query": [
+                {
+                  "key": "route",
+                  "value": "{{appRoute}}"
+                },
+                {
+                  "key": "step",
+                  "value": "{{appStepNo}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var tips = pm.response.json().tips;",
+                  "pm.test(\"앱이 만든 팁이 목록에 있고 제목·위치·상태가 같다\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var found = tips.filter(function (t) { return t.id === before.id; });",
+                  "  pm.expect(found.length).to.eql(1);",
+                  "  pm.expect(found[0].title).to.eql(before.title);",
+                  "  pm.expect(found[0].location).to.eql(before.location);",
+                  "  pm.expect(found[0].status).to.eql(before.status);",
+                  "});",
+                  "pm.test(\"토큰 없이 읽어 mine은 모두 false\", function () {",
+                  "  tips.forEach(function (t) { pm.expect(t.mine, \"tip \" + t.id).to.eql(false); });",
+                  "});",
+                  "pm.collectionVariables.set(\"countBefore\", String(tips.length));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2 인증 없음·무효 토큰 → 401, 값 그대로",
+      "description": "보호 요청을 토큰 없이 보내면 401이고 자료가 생기거나 바뀌지 않는다. 무효 토큰을 붙이면 공개 GET도 401이다(앱은 이때 로그인을 지우고 토큰 없이 다시 읽는다). 교재 005 4번.",
+      "item": [
+        {
+          "name": "토큰 없이 등록 · POST /api/tips · 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"route\": \"{{appRoute}}\",\n  \"stepNo\": {{appStepNo}},\n  \"title\": \"[Postman] 10장 토큰 없는 등록 {{runTag}}\",\n  \"location\": \"검사용 위치\",\n  \"note\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"runTag\", String(Date.now()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"오류 code UNAUTHORIZED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "목록 다시 읽기 · 개수 그대로 · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips?route={{appRoute}}&step={{appStepNo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips"
+              ],
+              "query": [
+                {
+                  "key": "route",
+                  "value": "{{appRoute}}"
+                },
+                {
+                  "key": "step",
+                  "value": "{{appStepNo}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "var tips = pm.response.json().tips;",
+                  "pm.test(\"팁 개수가 그대로(토큰 없는 등록이 저장되지 않음)\", function () {",
+                  "  pm.expect(tips.length).to.eql(Number(pm.collectionVariables.get(\"countBefore\")));",
+                  "});",
+                  "pm.test(\"토큰 없이 보낸 제목의 팁이 없다\", function () {",
+                  "  var tag = pm.collectionVariables.get(\"runTag\");",
+                  "  pm.expect(tips.filter(function (t) { return t.title.indexOf(tag) >= 0; }).length).to.eql(0);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "토큰 없이 상태 변경 · PATCH /api/tips/{appTipId}/status · 401",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{otherStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"오류 code UNAUTHORIZED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱 팁 다시 읽기 · 값 그대로 · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"토큰 없는 상태 변경 뒤에도 값 11개가 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "무효 토큰으로 공개 팁 목록 · GET /api/tips · 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer not-a-real-token"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips?route={{appRoute}}&step={{appStepNo}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips"
+              ],
+              "query": [
+                {
+                  "key": "route",
+                  "value": "{{appRoute}}"
+                },
+                {
+                  "key": "step",
+                  "value": "{{appStepNo}}"
+                }
+              ]
+            },
+            "description": "내 명세(api-spec.yaml)는 GET /api/tips에 토큰을 붙이면 서버가 mine을 계산한다. 그래서 앱은 로그인했을 때 이 공개 GET에도 토큰을 붙이고, 401을 받으면 로그인을 지우고 토큰 없이 다시 읽는다. 교재 10장 규칙과 다른 점이지만 2026-10-21 사용자 결정으로 명세대로 유지한다(reports/app-integration.md 6절, CLAUDE.md 예외)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"오류 code UNAUTHORIZED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"UNAUTHORIZED\");",
+                  "});",
+                  "pm.test(\"문구: 로그인이 만료되었거나 올바르지 않습니다.\", function () {",
+                  "  pm.expect(pm.response.json().message).to.eql(\"로그인이 만료되었거나 올바르지 않습니다.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "토큰 없이 내 팁 · GET /api/me/tips · 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/tips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "tips"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 401\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "pm.test(\"오류 code UNAUTHORIZED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"UNAUTHORIZED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 다른 사용자(B) → 403, 값 그대로",
+      "description": "A의 팁을 B가 바꾸려 하면 403이고 값·상태·등록자가 그대로다. 같은 계정으로 다시 로그인해도 등록자 권한은 생기지 않는다(교재 Q07). 이 API에는 삭제가 없어 B의 DELETE는 405다(권한표). 교재 005 5번.",
+      "item": [
+        {
+          "name": "B가 상태 변경 · PATCH /api/tips/{appTipId}/status · 403",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{otherStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 403\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"오류 code FORBIDDEN\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"FORBIDDEN\");",
+                  "});",
+                  "pm.test(\"문구: 이 팁을 올린 사람만 상태를 바꿀 수 있습니다.\", function () {",
+                  "  pm.expect(pm.response.json().message).to.eql(\"이 팁을 올린 사람만 상태를 바꿀 수 있습니다.\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B가 같은 상태로 다시 보냄 · 403",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{originalStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 403\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});",
+                  "pm.test(\"오류 code FORBIDDEN\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"FORBIDDEN\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B 토큰으로 앱 팁 읽기 · 값 그대로 · mine false · 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"B의 거부 뒤에도 값 11개가 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});",
+                  "pm.test(\"B에게는 mine이 false\", function () {",
+                  "  pm.expect(pm.response.json().mine).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B의 내 팁 · GET /api/me/tips · 200 · A의 팁 없음",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/tips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "tips"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"목록에 앱이 만든 팁이 없다\", function () {",
+                  "  var id = Number(pm.collectionVariables.get(\"appTipId\"));",
+                  "  pm.expect(pm.response.json().tips.map(function (t) { return t.id; })).to.not.include(id);",
+                  "});",
+                  "pm.test(\"B의 내 팁은 모두 B가 올린 것\", function () {",
+                  "  var me = Number(pm.collectionVariables.get(\"userIdB\"));",
+                  "  pm.response.json().tips.forEach(function (t) { pm.expect(t.ownerId, \"tip \" + t.id).to.eql(me); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B가 삭제 · DELETE /api/tips/{appTipId} · 405(삭제 API 없음)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            },
+            "description": "api-spec.yaml에 DELETE가 없다. 유효한 토큰이면 405 METHOD_NOT_ALLOWED(docs/permission-matrix.md '허용하지 않는 메서드')."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 405\", function () {",
+                  "  pm.response.to.have.status(405);",
+                  "});",
+                  "pm.test(\"오류 code METHOD_NOT_ALLOWED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"METHOD_NOT_ALLOWED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱 팁 다시 읽기 · 값 그대로 · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"B의 삭제 요청 뒤에도 값 11개가 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 등록자(A) 상태 변경·반복·잘못된 본문",
+      "description": "A는 자기 팁의 상태를 바꿀 수 있다. 같은 상태를 다시 보내도 200이고 verifiedAt만 다시 기록된다(docs/state-rules.md). status·ownerId 같은 서버 관리 값은 본문으로 바꿀 수 없다. 끝에 원래 상태로 되돌린다. 교재 005 6·7번.",
+      "item": [
+        {
+          "name": "A가 상태 변경 · PATCH · 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{otherStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(function () {}, 30);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"상태가 바뀌었다\", function () {",
+                  "  pm.expect(pm.response.json().status).to.eql(pm.collectionVariables.get(\"otherStatus\"));",
+                  "  pm.expect(pm.response.json().mine).to.eql(true);",
+                  "});",
+                  "pm.test(\"verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  pm.expect(Date.parse(pm.response.json().verifiedAt)).to.be.above(Date.parse(before.verifiedAt));",
+                  "});",
+                  "pm.test(\"status·verifiedAt 말고 다른 값은 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].filter(function (k) { return [\"status\",\"verifiedAt\"].indexOf(k) < 0; }).forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});",
+                  "pm.test(\"비교할 값 11개가 모두 있고 자료형이 맞다\", function () {",
+                  "  var tip = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(tip, k).to.have.property(k); });",
+                  "  pm.expect(tip.id).to.be.a(\"number\");",
+                  "  pm.expect(tip.stepNo).to.be.a(\"number\");",
+                  "  pm.expect(tip.ownerId).to.be.a(\"number\");",
+                  "  [\"route\", \"title\", \"location\", \"status\", \"verifiedAt\", \"createdAt\"].forEach(function (k) { pm.expect(tip[k], k).to.be.a(\"string\"); });",
+                  "  pm.expect(tip.note === null || typeof tip.note === \"string\", \"note\").to.eql(true);",
+                  "  pm.expect(tip.example).to.be.a(\"boolean\");",
+                  "});",
+                  "var saved = {};",
+                  "[\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { saved[k] = pm.response.json()[k]; });",
+                  "pm.collectionVariables.set(\"snapshot\", JSON.stringify(saved));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A가 같은 상태로 다시 보냄 · 200 · verifiedAt만 다시 기록",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{otherStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(function () {}, 30);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  pm.expect(Date.parse(pm.response.json().verifiedAt)).to.be.above(Date.parse(before.verifiedAt));",
+                  "});",
+                  "pm.test(\"verifiedAt 말고 다른 값은 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].filter(function (k) { return [\"verifiedAt\"].indexOf(k) < 0; }).forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});",
+                  "pm.test(\"비교할 값 11개가 모두 있고 자료형이 맞다\", function () {",
+                  "  var tip = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(tip, k).to.have.property(k); });",
+                  "  pm.expect(tip.id).to.be.a(\"number\");",
+                  "  pm.expect(tip.stepNo).to.be.a(\"number\");",
+                  "  pm.expect(tip.ownerId).to.be.a(\"number\");",
+                  "  [\"route\", \"title\", \"location\", \"status\", \"verifiedAt\", \"createdAt\"].forEach(function (k) { pm.expect(tip[k], k).to.be.a(\"string\"); });",
+                  "  pm.expect(tip.note === null || typeof tip.note === \"string\", \"note\").to.eql(true);",
+                  "  pm.expect(tip.example).to.be.a(\"boolean\");",
+                  "});",
+                  "var saved = {};",
+                  "[\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { saved[k] = pm.response.json()[k]; });",
+                  "pm.collectionVariables.set(\"snapshot\", JSON.stringify(saved));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A가 명세 밖 상태 · 400 VALIDATION_FAILED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"DELETED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"오류 code VALIDATION_FAILED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"VALIDATION_FAILED\");",
+                  "});",
+                  "pm.test(\"errors.status 있음\", function () {",
+                  "  pm.expect(pm.response.json().errors).to.have.property(\"status\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A가 본문에 ownerId를 넣음 · 400 INVALID_REQUEST_BODY",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "description": "등록자는 토큰으로만 정해진다. 본문에 정하지 않은 항목(ownerId)이 오면 400(docs/permission-matrix.md '입력 오류').",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{originalStatus}}\",\n  \"ownerId\": {{userIdB}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"오류 code INVALID_REQUEST_BODY\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"INVALID_REQUEST_BODY\");",
+                  "});",
+                  "pm.test(\"errors.ownerId 있음\", function () {",
+                  "  pm.expect(pm.response.json().errors).to.have.property(\"ownerId\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱 팁 다시 읽기 · 400 뒤 값 그대로 · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"잘못된 본문 두 번 뒤에도 값 11개가 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A의 내 팁 · GET /api/me/tips · 200 · 앱 팁 있음",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/me/tips",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "me",
+                "tips"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"앱이 만든 팁이 A의 내 팁에 있고 mine이 true\", function () {",
+                  "  var id = Number(pm.collectionVariables.get(\"appTipId\"));",
+                  "  var found = pm.response.json().tips.filter(function (t) { return t.id === id; });",
+                  "  pm.expect(found.length).to.eql(1);",
+                  "  pm.expect(found[0].mine).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A가 원래 상태로 되돌림 · PATCH · 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{originalStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "setTimeout(function () {}, 30);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"원래 상태로 돌아왔다\", function () {",
+                  "  pm.expect(pm.response.json().status).to.eql(pm.collectionVariables.get(\"originalStatus\"));",
+                  "});",
+                  "pm.test(\"verifiedAt이 이 요청 시각으로 다시 기록됐다(이전 값보다 뒤)\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  pm.expect(Date.parse(pm.response.json().verifiedAt)).to.be.above(Date.parse(before.verifiedAt));",
+                  "});",
+                  "pm.test(\"status·verifiedAt 말고 다른 값은 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].filter(function (k) { return [\"status\",\"verifiedAt\"].indexOf(k) < 0; }).forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});",
+                  "pm.test(\"비교할 값 11개가 모두 있고 자료형이 맞다\", function () {",
+                  "  var tip = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(tip, k).to.have.property(k); });",
+                  "  pm.expect(tip.id).to.be.a(\"number\");",
+                  "  pm.expect(tip.stepNo).to.be.a(\"number\");",
+                  "  pm.expect(tip.ownerId).to.be.a(\"number\");",
+                  "  [\"route\", \"title\", \"location\", \"status\", \"verifiedAt\", \"createdAt\"].forEach(function (k) { pm.expect(tip[k], k).to.be.a(\"string\"); });",
+                  "  pm.expect(tip.note === null || typeof tip.note === \"string\", \"note\").to.eql(true);",
+                  "  pm.expect(tip.example).to.be.a(\"boolean\");",
+                  "});",
+                  "var saved = {};",
+                  "[\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { saved[k] = pm.response.json()[k]; });",
+                  "pm.collectionVariables.set(\"snapshot\", JSON.stringify(saved));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A가 삭제 · DELETE /api/tips/{appTipId} · 405(삭제 API 없음)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            },
+            "description": "교재 005 8번(내 시험 자료 삭제)은 이 API에 삭제가 없어 해당 없음. 405이고 자료는 남는다."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 405\", function () {",
+                  "  pm.response.to.have.status(405);",
+                  "});",
+                  "pm.test(\"오류 code METHOD_NOT_ALLOWED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"METHOD_NOT_ALLOWED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "앱 팁 다시 읽기 · 남아 있고 값 그대로 · 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/{{appTipId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "{{appTipId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 200\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"삭제 요청 뒤에도 팁이 남아 있고 값 11개가 그대로\", function () {",
+                  "  var before = JSON.parse(pm.collectionVariables.get(\"snapshot\"));",
+                  "  var now = pm.response.json();",
+                  "  [\"id\",\"route\",\"stepNo\",\"title\",\"location\",\"note\",\"status\",\"verifiedAt\",\"createdAt\",\"ownerId\",\"example\"].forEach(function (k) { pm.expect(now[k], k).to.eql(before[k]); });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 없는 번호·형식",
+      "description": "없는 번호는 404, 숫자가 아닌 번호는 400이다(docs/permission-matrix.md '없는 번호'). 끝나면 토큰 변수를 비운다.",
+      "item": [
+        {
+          "name": "없는 팁 읽기 · GET /api/tips/999999999 · 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/999999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "999999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"오류 code NOT_FOUND\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "없는 팁 상태 변경(A) · 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tokenA}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/999999999/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "999999999",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"{{originalStatus}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 404\", function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test(\"오류 code NOT_FOUND\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"NOT_FOUND\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "숫자가 아닌 번호 · GET /api/tips/abc · 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tips/abc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tips",
+                "abc"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"상태 코드 400\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"오류 code VALIDATION_FAILED\", function () {",
+                  "  pm.expect(pm.response.json().code).to.eql(\"VALIDATION_FAILED\");",
+                  "});",
+                  "pm.test(\"errors.id 있음\", function () {",
+                  "  pm.expect(pm.response.json().errors).to.have.property(\"id\");",
+                  "});",
+                  "[\"tokenA\", \"tokenB\"].forEach(function (k) { pm.collectionVariables.set(k, \"\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "tokenA",
+      "value": ""
+    },
+    {
+      "key": "tokenB",
+      "value": ""
+    },
+    {
+      "key": "userIdA",
+      "value": ""
+    },
+    {
+      "key": "userIdB",
+      "value": ""
+    },
+    {
+      "key": "appTipId",
+      "value": ""
+    },
+    {
+      "key": "snapshot",
+      "value": ""
+    },
+    {
+      "key": "appRoute",
+      "value": ""
+    },
+    {
+      "key": "appStepNo",
+      "value": ""
+    },
+    {
+      "key": "originalStatus",
+      "value": ""
+    },
+    {
+      "key": "otherStatus",
+      "value": ""
+    },
+    {
+      "key": "countBefore",
+      "value": ""
+    },
+    {
+      "key": "runTag",
+      "value": ""
+    }
+  ]
+}

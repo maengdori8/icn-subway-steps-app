@@ -14,12 +14,16 @@ abstract class SubwayRepository {
   Future<Tip> createTip(TipDraft draft, UserSession session); // POST /api/tips (로그인 필요)
   Future<Tip> updateTipStatus(int tipId, TipStatus status, UserSession session); // PATCH /api/tips/{id}/status
   Future<UserSession> login(String username, String password); // POST /api/auth/login
+  // POST /api/auth/signup → 201 User{id, username}. 토큰은 주지 않으므로 가입한 뒤 login으로 로그인한다.
+  // 이미 있는 아이디는 409 USERNAME_TAKEN(validation, serverCode로 구분).
+  Future<void> signup(String username, String password);
 }
 
 // 실패 종류. 화면은 종류마다 다른 안내를 보인다(원인을 단정할 수 있을 때만 '오프라인' 문구).
 enum RepositoryErrorCode {
   offline, // 연결 끊김이 확인됨
-  server, // 원인을 모르는 실패(5xx 등)
+  server, // 원인을 모르는 실패(5xx, 서버 꺼짐 등)
+  timeout, // 응답을 기다리다 시간 초과: 서버가 처리했는지 모른다(등록을 바로 다시 보내지 않는다)
   unauthorized, // 401: 로그인이 없거나 끝남
   forbidden, // 403: 올린 사람이 아님
   invalidCredentials, // 로그인 실패(아이디·비밀번호 불일치)

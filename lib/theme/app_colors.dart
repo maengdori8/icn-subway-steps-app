@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 // docs/design-system.json의 tokens.colors(밝게)·tokens.colorsDark(어둡게). 두 벌의 키가 같아 위젯은 키만 쓴다.
-// 역할을 섞지 않는다: primary=주요 행동 버튼, signage=상단 바·표지판 칩, routeExpress·routeLocal/onRoute=경로 버튼·띠.
+// 역할을 섞지 않는다: primary=주요 행동 버튼, signage=표지판 칩(상단 바는 2026-10-22부터 밝은 surface), routeExpress·routeLocal/onRoute=경로 버튼·띠.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
